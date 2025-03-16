@@ -1,4 +1,4 @@
-use clrs::sort::insertion_sort;
+use clrs::prelude::insertion_sort;
 
 #[test]
 fn insertion_sort_test() {
