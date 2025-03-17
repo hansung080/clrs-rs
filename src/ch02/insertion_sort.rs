@@ -13,49 +13,24 @@ pub fn insertion_sort<T: PartialOrd + Copy>(a: &mut [T]) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::seq::SliceRandom;
 
     #[test]
     fn insertion_sort_i32() {
-        let cases: [(&mut [i32], &[i32]); 7] = [
-            (&mut [], &[]),
-            (&mut [1], &[1]),
-            (&mut [1, 2, 3, 4, 5, 6], &[1, 2, 3, 4, 5, 6]),
-            (&mut [6, 5, 4, 3, 2, 1], &[1, 2, 3, 4, 5, 6]),
-            (&mut [5, 2, 4, 6, 1, 3], &[1, 2, 3, 4, 5, 6]),
-            (&mut [-3, 5, 4, -1, 2, 2, -6], &[-6, -3, -1, 2, 2, 4, 5]),
-            (&mut [7, 2, 4, 5, 8, 3, 6, 1], &[1, 2, 3, 4, 5, 6, 7, 8]),
-        ];
-        for (input, expected) in cases {
-            insertion_sort(input);
-            assert_eq!(input, expected);
-        }
+        crate::ch02::tests::sort_i32(insertion_sort);
     }
 
     #[test]
     fn insertion_sort_f64() {
-        let mut rng = rand::rng();
-        let mut arr = [-0.1, 0.2, 0.2, -0.3, 0.4, 0.5, -0.6];
-        arr.shuffle(&mut rng);
-        insertion_sort(&mut arr);
-        assert_eq!(arr, [-0.6, -0.3, -0.1, 0.2, 0.2, 0.4, 0.5]);
+        crate::ch02::tests::sort_f64(insertion_sort);
     }
 
     #[test]
     fn insertion_sort_char() {
-        let mut rng = rand::rng();
-        let mut arr = ['a', 'b', 'b', 'c', 'd', 'e', 'f'];
-        arr.shuffle(&mut rng);
-        insertion_sort(&mut arr);
-        assert_eq!(arr, ['a', 'b', 'b', 'c', 'd', 'e', 'f']);
+        crate::ch02::tests::sort_char(insertion_sort);
     }
 
     #[test]
     fn insertion_sort_str() {
-        let mut rng = rand::rng();
-        let mut arr = ["a", "b", "b", "c", "d", "e", "ee", "f"];
-        arr.shuffle(&mut rng);
-        insertion_sort(&mut arr);
-        assert_eq!(arr, ["a", "b", "b", "c", "d", "e", "ee", "f"]);
+        crate::ch02::tests::sort_str(|a| insertion_sort(a));
     }
 }
