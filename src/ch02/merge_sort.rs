@@ -13,7 +13,7 @@ fn _merge_sort<T: PartialOrd + Copy>(a: &mut [T], p: usize, r: usize) {
 
 fn merge<T: PartialOrd + Copy>(a: &mut [T], p: usize, q: usize, r: usize) {
     let left = Vec::from(&a[p..=q]);
-    let right = Vec::from(&a[(q + 1)..=r]);
+    let right = Vec::from(&a[q + 1..=r]);
 
     let n_left = left.len();
     let n_right = right.len();

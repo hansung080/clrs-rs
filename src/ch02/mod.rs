@@ -1,5 +1,6 @@
 pub mod insertion_sort;
 pub mod merge_sort;
+pub mod bubble_sort;
 
 #[cfg(test)]
 mod tests {
