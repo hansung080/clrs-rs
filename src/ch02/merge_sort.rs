@@ -1,13 +1,13 @@
 pub fn merge_sort<T: PartialOrd + Copy>(a: &mut [T]) {
     if a.len() == 0 { return; }
-    _merge_sort(a, 0, a.len() - 1);
+    merge_sort_aux(a, 0, a.len() - 1);
 }
 
-fn _merge_sort<T: PartialOrd + Copy>(a: &mut [T], p: usize, r: usize) {
+fn merge_sort_aux<T: PartialOrd + Copy>(a: &mut [T], p: usize, r: usize) {
     if p >= r { return; }
     let q = (p + r) / 2;
-    _merge_sort(a, p, q);
-    _merge_sort(a, q + 1, r);
+    merge_sort_aux(a, p, q);
+    merge_sort_aux(a, q + 1, r);
     merge(a, p, q, r);
 }
 
