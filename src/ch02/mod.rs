@@ -16,33 +16,33 @@ mod tests {
             (&mut [-3, 5, 4, -1, 2, 2, -6], &[-6, -3, -1, 2, 2, 4, 5]),
             (&mut [7, 2, 4, 5, 8, 3, 6, 1], &[1, 2, 3, 4, 5, 6, 7, 8]),
         ];
-        for (input, expected) in cases {
-            sort(input);
-            assert_eq!(input, expected);
+        for (a, expected) in cases {
+            sort(a);
+            assert_eq!(a, expected);
         }
     }
 
     pub fn sort_f64(sort: fn(&mut [f64])) {
         let mut rng = rand::rng();
-        let mut array = [-0.1, 0.2, 0.2, -0.3, 0.4, 0.5, -0.6];
-        array.shuffle(&mut rng);
-        sort(&mut array);
-        assert_eq!(array, [-0.6, -0.3, -0.1, 0.2, 0.2, 0.4, 0.5]);
+        let mut a = [-0.1, 0.2, 0.2, -0.3, 0.4, 0.5, -0.6];
+        a.shuffle(&mut rng);
+        sort(&mut a);
+        assert_eq!(a, [-0.6, -0.3, -0.1, 0.2, 0.2, 0.4, 0.5]);
     }
 
     pub fn sort_char(sort: fn(&mut [char])) {
         let mut rng = rand::rng();
-        let mut array = ['a', 'b', 'b', 'c', 'd', 'e', 'f'];
-        array.shuffle(&mut rng);
-        sort(&mut array);
-        assert_eq!(array, ['a', 'b', 'b', 'c', 'd', 'e', 'f']);
+        let mut a = ['a', 'b', 'b', 'c', 'd', 'e', 'f'];
+        a.shuffle(&mut rng);
+        sort(&mut a);
+        assert_eq!(a, ['a', 'b', 'b', 'c', 'd', 'e', 'f']);
     }
 
     pub fn sort_str(sort: fn(&mut [&str])) {
         let mut rng = rand::rng();
-        let mut array = ["a", "b", "b", "c", "d", "e", "ee", "f"];
-        array.shuffle(&mut rng);
-        sort(&mut array);
-        assert_eq!(array, ["a", "b", "b", "c", "d", "e", "ee", "f"]);
+        let mut a = ["a", "b", "b", "c", "d", "e", "ee", "f"];
+        a.shuffle(&mut rng);
+        sort(&mut a);
+        assert_eq!(a, ["a", "b", "b", "c", "d", "e", "ee", "f"]);
     }
 }
