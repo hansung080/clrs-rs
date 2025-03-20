@@ -49,22 +49,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn merge_sort_i32() {
+    fn merge_sort_test() {
         crate::ch02::tests::sort_i32(merge_sort);
-    }
-
-    #[test]
-    fn merge_sort_f64() {
         crate::ch02::tests::sort_f64(merge_sort);
-    }
-
-    #[test]
-    fn merge_sort_char() {
         crate::ch02::tests::sort_char(merge_sort);
-    }
-
-    #[test]
-    fn merge_sort_str() {
         crate::ch02::tests::sort_str(|a| merge_sort(a));
     }
 }

@@ -18,22 +18,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn bubble_sort_i32() {
+    fn bubble_sort_test() {
         crate::ch02::tests::sort_i32(bubble_sort);
-    }
-
-    #[test]
-    fn bubble_sort_f64() {
         crate::ch02::tests::sort_f64(bubble_sort);
-    }
-
-    #[test]
-    fn bubble_sort_char() {
         crate::ch02::tests::sort_char(bubble_sort);
-    }
-
-    #[test]
-    fn bubble_sort_str() {
         crate::ch02::tests::sort_str(|a| bubble_sort(a));
     }
 }
