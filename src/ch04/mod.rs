@@ -1,19 +1,20 @@
 pub mod matrix_multiply;
 pub mod matrix_multiply_recursive;
+pub mod matrix_multiply_strassen;
 
 #[cfg(test)]
 mod tests {
-    pub fn matrix_multiply_i32_n0(mat_mul: fn(&[[i32; 0]; 0], &[[i32; 0]; 0]) -> Box<[[i32; 0]; 0]>) {
+    pub fn matrix_multiply_i32_n0(mat_mul: fn(&[[i32; 0]; 0], &[[i32; 0]; 0]) -> [[i32; 0]; 0]) {
         let empty: [[i32; 0]; 0] = [];
-        assert_eq!(*mat_mul(&empty, &empty), empty);
+        assert_eq!(mat_mul(&empty, &empty), empty);
     }
 
-    pub fn matrix_multiply_i32_n1(mat_mul: fn(&[[i32; 1]; 1], &[[i32; 1]; 1]) -> Box<[[i32; 1]; 1]>) {
-        assert_eq!(*mat_mul(&[[2]], &[[3]]), [[6]]);
+    pub fn matrix_multiply_i32_n1(mat_mul: fn(&[[i32; 1]; 1], &[[i32; 1]; 1]) -> [[i32; 1]; 1]) {
+        assert_eq!(mat_mul(&[[2]], &[[3]]), [[6]]);
     }
 
-    pub fn matrix_multiply_i32_n2(mat_mul: fn(&[[i32; 2]; 2], &[[i32; 2]; 2]) -> Box<[[i32; 2]; 2]>) {
-        assert_eq!(*mat_mul(
+    pub fn matrix_multiply_i32_n2(mat_mul: fn(&[[i32; 2]; 2], &[[i32; 2]; 2]) -> [[i32; 2]; 2]) {
+        assert_eq!(mat_mul(
             &[
                 [1, 2],
                 [3, 4],
@@ -29,8 +30,8 @@ mod tests {
         );
     }
 
-    pub fn matrix_multiply_i32_n3(mat_mul: fn(&[[i32; 3]; 3], &[[i32; 3]; 3]) -> Box<[[i32; 3]; 3]>) {
-        assert_eq!(*mat_mul(
+    pub fn matrix_multiply_i32_n3(mat_mul: fn(&[[i32; 3]; 3], &[[i32; 3]; 3]) -> [[i32; 3]; 3]) {
+        assert_eq!(mat_mul(
             &[
                 [1, 2, 3],
                 [4, 5, 6],
@@ -49,8 +50,8 @@ mod tests {
         );
     }
 
-    pub fn matrix_multiply_i32_n4(mat_mul: fn(&[[i32; 4]; 4], &[[i32; 4]; 4]) -> Box<[[i32; 4]; 4]>) {
-        assert_eq!(*mat_mul(
+    pub fn matrix_multiply_i32_n4(mat_mul: fn(&[[i32; 4]; 4], &[[i32; 4]; 4]) -> [[i32; 4]; 4]) {
+        assert_eq!(mat_mul(
             &[
                 [ 1,  2,  3,  4],
                 [ 5,  6,  7,  8],
@@ -72,8 +73,8 @@ mod tests {
         );
     }
 
-    pub fn matrix_multiply_i32_n8(mat_mul: fn(&[[i32; 8]; 8], &[[i32; 8]; 8]) -> Box<[[i32; 8]; 8]>) {
-        assert_eq!(*mat_mul(
+    pub fn matrix_multiply_i32_n8(mat_mul: fn(&[[i32; 8]; 8], &[[i32; 8]; 8]) -> [[i32; 8]; 8]) {
+        assert_eq!(mat_mul(
             &[
                 [ 1,  2,  3,  4,  5,  6,  7,  8],
                 [ 9, 10, 11, 12, 13, 14, 15, 16],
@@ -108,8 +109,8 @@ mod tests {
     }
 
 
-    pub fn matrix_multiply_f64_n4(mat_mul: fn(&[[f64; 4]; 4], &[[f64; 4]; 4]) -> Box<[[f64; 4]; 4]>) {
-        assert_eq!(*mat_mul(
+    pub fn matrix_multiply_f64_n4(mat_mul: fn(&[[f64; 4]; 4], &[[f64; 4]; 4]) -> [[f64; 4]; 4]) {
+        assert_eq!(mat_mul(
             &[
                 [ 1.0,  2.0,  3.0,  4.0],
                 [ 5.0,  6.0,  7.0,  8.0],

@@ -9,4 +9,5 @@ pub mod prelude {
 
     pub use crate::ch04::matrix_multiply::matrix_multiply;
     pub use crate::ch04::matrix_multiply_recursive::matrix_multiply_recursive;
+    pub use crate::ch04::matrix_multiply_strassen::matrix_multiply_strassen;
 }

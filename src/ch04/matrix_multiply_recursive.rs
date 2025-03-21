@@ -1,16 +1,16 @@
 use std::ops::{AddAssign, Mul};
 use crate::utils;
 
-pub fn matrix_multiply_recursive<T, const N: usize>(a: &[[T; N]; N], b: &[[T; N]; N]) -> Box<[[T; N]; N]>
+pub fn matrix_multiply_recursive<T, const N: usize>(a: &[[T; N]; N], b: &[[T; N]; N]) -> [[T; N]; N]
 where
     T: Mul<Output = T> + AddAssign + Default + Copy,
 {
-    if N == 0 { return Box::new([[T::default(); N]; N]); }
+    if N == 0 { return [[T::default(); N]; N]; }
     if !utils::is_power_of_two(N) { panic!("matrix dimension {N} is not an exact power of 2"); }
 
     let mut c = [[T::default(); N]; N];
     matrix_multiply_recursive_aux(a, b, &mut c, N, 0, 0, 0, 0, 0, 0);
-    Box::new(c)
+    c
 }
 
 /*
@@ -19,10 +19,10 @@ where
     B = [[B00, B01], [B10, B11]]
     C = [[C00, C01], [C10, C11]]
 
-    C00 = A00 * B00 + A01 * B10
-    C01 = A00 * B01 + A01 * B11
-    C10 = A10 * B00 + A11 * B10
-    C11 = A10 * B01 + A11 * B11
+    C00 += A00 * B00 + A01 * B10
+    C01 += A00 * B01 + A01 * B11
+    C10 += A10 * B00 + A11 * B10
+    C11 += A10 * B01 + A11 * B11
 */
 fn matrix_multiply_recursive_aux<T, const N: usize>(
     a: &[[T; N]; N],
@@ -43,14 +43,14 @@ where
         return;
     }
     let h = n / 2;
-    matrix_multiply_recursive_aux(a, b, c, h, a_i, a_j, b_i, b_j, c_i, c_j); // C00 += A00 * B00
-    matrix_multiply_recursive_aux(a, b, c, h, a_i, a_j, b_i, b_j + h, c_i, c_j + h); // C01 += A00 * B01
-    matrix_multiply_recursive_aux(a, b, c, h, a_i + h, a_j, b_i, b_j, c_i + h, c_j); // C10 += A10 * B00
-    matrix_multiply_recursive_aux(a, b, c, h, a_i + h, a_j, b_i, b_j + h, c_i + h, c_j + h); // C11 += A10 * B01
-    matrix_multiply_recursive_aux(a, b, c, h, a_i, a_j + h, b_i + h, b_j, c_i, c_j); // C00 += A01 * B10
-    matrix_multiply_recursive_aux(a, b, c, h, a_i, a_j + h, b_i + h, b_j + h, c_i, c_j + h); // C01 += A01 * B11
-    matrix_multiply_recursive_aux(a, b, c, h, a_i + h, a_j + h, b_i + h, b_j, c_i + h, c_j); // C10 += A11 * B10
-    matrix_multiply_recursive_aux(a, b, c, h, a_i + h, a_j + h, b_i + h, b_j + h, c_i + h, c_j + h); // C11 += A11 * B11
+    matrix_multiply_recursive_aux(a, b, c, h, a_i, a_j, b_i, b_j, c_i, c_j);
+    matrix_multiply_recursive_aux(a, b, c, h, a_i, a_j, b_i, b_j + h, c_i, c_j + h);
+    matrix_multiply_recursive_aux(a, b, c, h, a_i + h, a_j, b_i, b_j, c_i + h, c_j);
+    matrix_multiply_recursive_aux(a, b, c, h, a_i + h, a_j, b_i, b_j + h, c_i + h, c_j + h);
+    matrix_multiply_recursive_aux(a, b, c, h, a_i, a_j + h, b_i + h, b_j, c_i, c_j);
+    matrix_multiply_recursive_aux(a, b, c, h, a_i, a_j + h, b_i + h, b_j + h, c_i, c_j + h);
+    matrix_multiply_recursive_aux(a, b, c, h, a_i + h, a_j + h, b_i + h, b_j, c_i + h, c_j);
+    matrix_multiply_recursive_aux(a, b, c, h, a_i + h, a_j + h, b_i + h, b_j + h, c_i + h, c_j + h);
 }
 
 #[cfg(test)]

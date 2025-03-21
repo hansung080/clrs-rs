@@ -1,6 +1,6 @@
 use std::ops::{AddAssign, Mul};
 
-pub fn matrix_multiply<T, const N: usize>(a: &[[T; N]; N], b: &[[T; N]; N]) -> Box<[[T; N]; N]>
+pub fn matrix_multiply<T, const N: usize>(a: &[[T; N]; N], b: &[[T; N]; N]) -> [[T; N]; N]
 where
     T: Mul<Output = T> + AddAssign + Default + Copy,
 {
@@ -12,7 +12,7 @@ where
             }
         }
     }
-    Box::new(c)
+    c
 }
 
 #[cfg(test)]
