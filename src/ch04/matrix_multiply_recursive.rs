@@ -1,14 +1,15 @@
 use std::ops::{AddAssign, Mul};
 use crate::utils;
+use crate::utils::matrix::Mat;
 
-pub fn matrix_multiply_recursive<T, const N: usize>(a: &[[T; N]; N], b: &[[T; N]; N]) -> [[T; N]; N]
+pub fn matrix_multiply_recursive<T, const N: usize>(a: &Mat<T, N, N>, b: &Mat<T, N, N>) -> Mat<T, N, N>
 where
     T: Mul<Output = T> + AddAssign + Default + Copy,
 {
-    if N == 0 { return [[T::default(); N]; N]; }
+    if N == 0 { return Mat([[T::default(); N]; N]); }
     if !utils::is_power_of_two(N) { panic!("matrix dimension {N} is not an exact power of 2"); }
 
-    let mut c = [[T::default(); N]; N];
+    let mut c = Mat([[T::default(); N]; N]);
     matrix_multiply_recursive_aux(a, b, &mut c, N, 0, 0, 0, 0, 0, 0);
     c
 }
@@ -25,9 +26,9 @@ where
     C11 += A10 * B01 + A11 * B11
 */
 fn matrix_multiply_recursive_aux<T, const N: usize>(
-    a: &[[T; N]; N],
-    b: &[[T; N]; N],
-    c: &mut [[T; N]; N],
+    a: &Mat<T, N, N>,
+    b: &Mat<T, N, N>,
+    c: &mut Mat<T, N, N>,
     n: usize,
     a_i: usize,
     a_j: usize,

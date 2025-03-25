@@ -1,10 +1,11 @@
 use std::ops::{AddAssign, Mul};
+use crate::utils::matrix::Mat;
 
-pub fn matrix_multiply<T, const N: usize>(a: &[[T; N]; N], b: &[[T; N]; N]) -> [[T; N]; N]
+pub fn matrix_multiply<T, const N: usize>(a: &Mat<T, N, N>, b: &Mat<T, N, N>) -> Mat<T, N, N>
 where
     T: Mul<Output = T> + AddAssign + Default + Copy,
 {
-    let mut c = [[T::default(); N]; N];
+    let mut c = Mat([[T::default(); N]; N]);
     for i in 0..N {
         for j in 0..N {
             for k in 0..N {
