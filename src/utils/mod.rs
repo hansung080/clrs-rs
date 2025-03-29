@@ -1,3 +1,4 @@
+pub mod ops;
 pub mod matrix;
 
 pub fn is_power_of_two(n: usize) -> bool {
