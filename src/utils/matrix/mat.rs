@@ -198,4 +198,21 @@ mod tests {
             ]
         ));
     }
+
+    #[test]
+    fn mat_copy() {
+        let a = Mat([[1]]);
+        let b = Mat([[2]]);
+        let c = a + b;
+        assert_eq!(a, Mat([[1]]));
+        assert_eq!(b, Mat([[2]]));
+        assert_eq!(c, Mat([[3]]));
+
+        let a = Mat([[1]]);
+        let b = Mat([[2]]);
+        let c = a - b;
+        assert_eq!(a, Mat([[1]]));
+        assert_eq!(b, Mat([[2]]));
+        assert_eq!(c, Mat([[-1]]));
+    }
 }

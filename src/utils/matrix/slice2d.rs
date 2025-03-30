@@ -1,5 +1,6 @@
 use std::fmt::{self, Debug, Formatter};
-use std::ops::{Index, Range};
+use std::ops::{Add, Index, Range};
+use crate::utils::matrix::Vec2d;
 use crate::utils::ops::{IntoRange, Len, Slice};
 
 pub struct Slice2d<'s, T: 's> {
@@ -89,6 +90,14 @@ where
             row: Range { start: self.row.start + row.start, end: self.row.start + row.end },
             col: Range { start: self.col.start + col.start, end: self.col.start + col.end },
         }
+    }
+}
+
+impl<'s, T> Add for Slice2d<'s, T> {
+    type Output = Vec2d<T>;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        todo!()
     }
 }
 
