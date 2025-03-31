@@ -63,7 +63,7 @@ where
 
     fn add(self, rhs: Self) -> Self::Output {
         let (row_len, col_len) = self.shape();
-        assert_eq!((row_len, col_len), rhs.shape());
+        assert_eq!((row_len, col_len), rhs.shape(), "mismatched shape");
         let mut result = Vec2d(Vec::with_capacity(row_len));
         for i in 0..row_len {
             let mut result_row = Vec::with_capacity(col_len);
@@ -82,7 +82,7 @@ where
 {
     fn add_assign(&mut self, rhs: Self) {
         let (row_len, col_len) = self.shape();
-        assert_eq!((row_len, col_len), rhs.shape());
+        assert_eq!((row_len, col_len), rhs.shape(), "mismatched shape");
         for i in 0..row_len {
             for j in 0..col_len {
                 self[i][j] += rhs[i][j];
@@ -99,7 +99,7 @@ where
 
     fn sub(self, rhs: Self) -> Self::Output {
         let (row_len, col_len) = self.shape();
-        assert_eq!((row_len, col_len), rhs.shape());
+        assert_eq!((row_len, col_len), rhs.shape(), "mismatched shape");
         let mut result = Vec2d(Vec::with_capacity(row_len));
         for i in 0..row_len {
             let mut result_row = Vec::with_capacity(col_len);
@@ -118,7 +118,7 @@ where
 {
     fn sub_assign(&mut self, rhs: Self) {
         let (row_len, col_len) = self.shape();
-        assert_eq!((row_len, col_len), rhs.shape());
+        assert_eq!((row_len, col_len), rhs.shape(), "mismatched shape");
         for i in 0..row_len {
             for j in 0..col_len {
                 self[i][j] -= rhs[i][j];
@@ -192,6 +192,27 @@ mod tests {
                 vec![14, 16, 18],
             ]
         ));
+
+        assert_eq!(Vec2d(
+            vec![
+                vec![ 1,  2,  3,  4],
+                vec![ 5,  6,  7,  8],
+                vec![ 9, 10, 11, 12],
+                vec![13, 14, 15, 16],
+            ]
+        ).slice((..2, ..3)) + Vec2d(
+            vec![
+                vec![ 1,  2,  3,  4],
+                vec![ 5,  6,  7,  8],
+                vec![ 9, 10, 11, 12],
+                vec![13, 14, 15, 16],
+            ]
+        ).slice((2.., 1..)), Vec2d(
+            vec![
+                vec![11, 13, 15],
+                vec![19, 21, 23],
+            ]
+        ));
     }
 
     #[test]
@@ -226,6 +247,29 @@ mod tests {
                 vec![14, 16, 18],
             ]
         ));
+
+        let mut a = Vec2d(
+            vec![
+                vec![ 1,  2,  3,  4],
+                vec![ 5,  6,  7,  8],
+                vec![ 9, 10, 11, 12],
+                vec![13, 14, 15, 16],
+            ]
+        ).slice((..2, ..3));
+        a += Vec2d(
+            vec![
+                vec![ 1,  2,  3,  4],
+                vec![ 5,  6,  7,  8],
+                vec![ 9, 10, 11, 12],
+                vec![13, 14, 15, 16],
+            ]
+        ).slice((2.., 1..));
+        assert_eq!(a, Vec2d(
+            vec![
+                vec![11, 13, 15],
+                vec![19, 21, 23],
+            ]
+        ));
     }
 
     #[test]
@@ -247,6 +291,27 @@ mod tests {
             vec![
                 vec![-6, -6, -6],
                 vec![-6, -6, -6],
+            ]
+        ));
+
+        assert_eq!(Vec2d(
+            vec![
+                vec![ 1,  2,  3,  4],
+                vec![ 5,  6,  7,  8],
+                vec![ 9, 10, 11, 12],
+                vec![13, 14, 15, 16],
+            ]
+        ).slice((..2, ..3)) - Vec2d(
+            vec![
+                vec![ 1,  2,  3,  4],
+                vec![ 5,  6,  7,  8],
+                vec![ 9, 10, 11, 12],
+                vec![13, 14, 15, 16],
+            ]
+        ).slice((2.., 1..)), Vec2d(
+            vec![
+                vec![-9, -9, -9],
+                vec![-9, -9, -9],
             ]
         ));
     }
@@ -281,6 +346,29 @@ mod tests {
             vec![
                 vec![-6, -6, -6],
                 vec![-6, -6, -6],
+            ]
+        ));
+
+        let mut a = Vec2d(
+            vec![
+                vec![ 1,  2,  3,  4],
+                vec![ 5,  6,  7,  8],
+                vec![ 9, 10, 11, 12],
+                vec![13, 14, 15, 16],
+            ]
+        ).slice((..2, ..3));
+        a -= Vec2d(
+            vec![
+                vec![ 1,  2,  3,  4],
+                vec![ 5,  6,  7,  8],
+                vec![ 9, 10, 11, 12],
+                vec![13, 14, 15, 16],
+            ]
+        ).slice((2.., 1..));
+        assert_eq!(a, Vec2d(
+            vec![
+                vec![-9, -9, -9],
+                vec![-9, -9, -9],
             ]
         ));
     }
