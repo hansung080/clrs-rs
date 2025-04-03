@@ -1,21 +1,22 @@
 use std::fmt::{self, Debug, Formatter};
 use std::ops::{Add, Index, Range, Sub};
 use crate::utils::matrix::Vec2d;
-use crate::utils::ops::{IntoRange, Len, Slice};
+use crate::utils::ops::{IntoRange, Len, SliceMut};
 
-#[derive(Clone)]
-pub struct Slice2d<'a, T: 'a> {
-    slice: &'a [T],
+pub struct Slice2dMut<'a, T: 'a> {
+    slice: &'a mut [T],
     row: Range<usize>,
     col: Range<usize>,
 }
 
-impl<'a, T: Len> Slice2d<'a, T> {
-    pub fn new(slice: &'a [T]) -> Self {
-        Slice2d {
+impl<'a, T: Len> Slice2dMut<'a, T> {
+    pub fn new(slice: &'a mut [T]) -> Self {
+        let row_len = slice.len();
+        let col_len = if row_len == 0 { 0 } else { slice[0].len() };
+        Slice2dMut {
             slice,
-            row: 0..slice.len(),
-            col: 0..if slice.len() == 0 { 0 } else { slice[0].len() },
+            row: 0..row_len,
+            col: 0..col_len,
         }
     }
 
@@ -24,7 +25,7 @@ impl<'a, T: Len> Slice2d<'a, T> {
     }
 }
 
-impl<'a, T> Debug for Slice2d<'a , T>
+impl<'a, T> Debug for Slice2dMut<'a , T>
 where
     T: Index<Range<usize>>,
     <T as Index<Range<usize>>>::Output: Debug,
@@ -34,11 +35,11 @@ where
         for i in self.row.clone() {
             v.push(&self.slice[i][self.col.clone()])
         }
-        write!(f, "Slice2d({v:?})")
+        write!(f, "Slice2dMut({v:?})")
     }
 }
 
-impl<'a, T> PartialEq for Slice2d<'a, T>
+impl<'a, T> PartialEq for Slice2dMut<'a, T>
 where
     T: Index<usize> + Len,
     <T as Index<usize>>::Output: PartialEq,
@@ -57,7 +58,7 @@ where
     }
 }
 
-impl<'a, T> Index<(usize, usize)> for Slice2d<'a, T>
+impl<'a, T> Index<(usize, usize)> for Slice2dMut<'a, T>
 where
     T: Index<usize>,
 {
@@ -70,14 +71,14 @@ where
     }
 }
 
-impl<'a, T, Rng1, Rng2> Slice<(Rng1, Rng2)> for Slice2d<'a, T>
+impl<'a, 'b, T: 'b, Rng1, Rng2> SliceMut<'b, (Rng1, Rng2)> for Slice2dMut<'a, T>
 where
     Rng1: IntoRange<usize>,
     Rng2: IntoRange<usize>,
 {
-    type Output = Self;
+    type Output = Slice2dMut<'b, T>;
 
-    fn slice(&self, (row, col): (Rng1, Rng2)) -> Self::Output {
+    fn slice(&'b mut self, (row, col): (Rng1, Rng2)) -> Self::Output {
         let (row, col) =
             (row.into_range(Range { start: 0, end: self.row.len() }),
              col.into_range(Range { start: 0, end: self.col.len() }));
@@ -86,7 +87,7 @@ where
         assert!(row.end <= self.row.len(), "row range end index {} out of range for row of length {}", row.end, self.row.len());
         assert!(col.end <= self.col.len(), "column range end index {} out of range for column of length {}", col.end, self.col.len());
 
-        Slice2d {
+        Slice2dMut {
             slice: self.slice,
             row: Range { start: self.row.start + row.start, end: self.row.start + row.end },
             col: Range { start: self.col.start + col.start, end: self.col.start + col.end },
@@ -94,7 +95,7 @@ where
     }
 }
 
-impl<'a, T> Add for Slice2d<'a, T>
+impl<'a, T> Add for Slice2dMut<'a, T>
 where
     T: Index<usize> + Len,
     <T as Index<usize>>::Output: Add<Output = <T as Index<usize>>::Output> + Copy,
@@ -116,7 +117,7 @@ where
     }
 }
 
-impl<'a, T> Sub for Slice2d<'a, T>
+impl<'a, T> Sub for Slice2dMut<'a, T>
 where
     T: Index<usize> + Len,
     <T as Index<usize>>::Output: Sub<Output = <T as Index<usize>>::Output> + Copy,
@@ -144,32 +145,36 @@ mod tests {
 
     #[test]
     fn slice2d_index_and_slice() {
-        let a = Slice2d::new(
-            &[
-                [ 1,  2,  3,  4],
-                [ 5,  6,  7,  8],
-                [ 9, 10, 11, 12],
-                [13, 14, 15, 16],
-            ]
-        );
+        let mut a = [
+            [ 1,  2,  3,  4],
+            [ 5,  6,  7,  8],
+            [ 9, 10, 11, 12],
+            [13, 14, 15, 16],
+        ];
+        let mut a = Slice2dMut::new(&mut a);
 
         assert_eq!(a[(0, 0)], 1);
         assert_eq!(a[(1, 2)], 7);
         assert_eq!(a[(3, 3)], 16);
 
-        assert_eq!(a.slice((1..3, 1..3)), Slice2d::new(&[[6, 7, 0, 0], [10, 11, 0, 0]]).slice((.., 0..2)));
-        assert_eq!(a.slice((1..=2, 1..=2)), Slice2d::new(&[[6, 7, 0, 0], [10, 11, 0, 0]]).slice((.., ..2)));
-        assert_eq!(a.slice((1.., 1..)), Slice2d::new(&[[6, 7, 8, 0], [10, 11, 12, 0], [14, 15, 16, 0]]).slice((.., 0..3)));
-        assert_eq!(a.slice((..3, ..3)), Slice2d::new(&[[1, 2, 3, 0], [5, 6, 7, 0], [9, 10, 11, 0]]).slice((.., ..3)));
-        assert_eq!(a.slice((.., ..)), Slice2d::new(&[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 16]]));
+        let mut expected = [[6, 7, 0, 0], [10, 11, 0, 0]];
+        assert_eq!(a.slice((1..3, 1..3)), Slice2dMut::new(&mut expected).slice((.., 0..2)));
+        let mut expected = [[6, 7, 0, 0], [10, 11, 0, 0]];
+        assert_eq!(a.slice((1..=2, 1..=2)), Slice2dMut::new(&mut expected).slice((.., ..2)));
+        let mut expected = [[6, 7, 8, 0], [10, 11, 12, 0], [14, 15, 16, 0]];
+        assert_eq!(a.slice((1.., 1..)), Slice2dMut::new(&mut expected).slice((.., 0..3)));
+        let mut expected = [[1, 2, 3, 0], [5, 6, 7, 0], [9, 10, 11, 0]];
+        assert_eq!(a.slice((..3, ..3)), Slice2dMut::new(&mut expected).slice((.., ..3)));
+        let mut expected = [[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 16]];
+        assert_eq!(a.slice((.., ..)), Slice2dMut::new(&mut expected));
 
-        let a = a.slice((1..3, 1..));
-        let b = Slice2d::new(
-            &[
-                [ 6,  7,  8, 0],
-                [10, 11, 12, 0],
-            ]
-        ).slice((.., ..3));
+        let mut a = a.slice((1..3, 1..));
+        let mut b = [
+            [ 6,  7,  8, 0],
+            [10, 11, 12, 0],
+        ];
+        let mut b = Slice2dMut::new(&mut b);
+        let mut b = b.slice((.., ..3));
         assert_eq!(a, b);
 
         assert_eq!(a[(0, 0)], 6);
@@ -184,41 +189,47 @@ mod tests {
 
     #[test]
     fn slice2d_add() {
-        assert_eq!(Slice2d::<[i32; 0]>::new(&[]) + Slice2d::new(&[]), Vec2d(vec![]));
-        assert_eq!(Slice2d::new(&[[1]]) + Slice2d::new(&[[2]]), Vec2d(vec![vec![3]]));
-        assert_eq!(Slice2d::new(&[[1.1]]) + Slice2d::new(&[[2.2]]), Vec2d(vec![vec![1.1 + 2.2]]));
-        assert_eq!(Slice2d::new(
-            &[
-                [1, 2, 3],
-                [4, 5, 6],
-            ]
-        ) + Slice2d::new(
-            &[
-                [ 7,  8,  9],
-                [10, 11, 12],
-            ]
-        ), Vec2d(
+        let mut a = [];
+        let mut b = [];
+        assert_eq!(Slice2dMut::<[i32; 0]>::new(&mut a) + Slice2dMut::new(&mut b), Vec2d(vec![]));
+
+        let mut a = [[1]];
+        let mut b = [[2]];
+        assert_eq!(Slice2dMut::new(&mut a) + Slice2dMut::new(&mut b), Vec2d(vec![vec![3]]));
+
+        let mut a = [[1.1]];
+        let mut b = [[2.2]];
+        assert_eq!(Slice2dMut::new(&mut a) + Slice2dMut::new(&mut b), Vec2d(vec![vec![1.1 + 2.2]]));
+
+        let mut a = [
+            [1, 2, 3],
+            [4, 5, 6],
+        ];
+        let mut b = [
+            [ 7,  8,  9],
+            [10, 11, 12],
+        ];
+        assert_eq!(Slice2dMut::new(&mut a) + Slice2dMut::new(&mut b), Vec2d(
             vec![
                 vec![ 8, 10, 12],
                 vec![14, 16, 18],
             ]
         ));
 
-        assert_eq!(Slice2d::new(
-            &[
-                [ 1,  2,  3,  4],
-                [ 5,  6,  7,  8],
-                [ 9, 10, 11, 12],
-                [13, 14, 15, 16],
-            ]
-        ).slice((..2, ..3)) + Slice2d::new(
-            &[
-                [ 1,  2,  3,  4],
-                [ 5,  6,  7,  8],
-                [ 9, 10, 11, 12],
-                [13, 14, 15, 16],
-            ]
-        ).slice((2.., 1..)), Vec2d(
+        let mut a = [
+            [ 1,  2,  3,  4],
+            [ 5,  6,  7,  8],
+            [ 9, 10, 11, 12],
+            [13, 14, 15, 16],
+        ];
+
+        let mut b = [
+            [ 1,  2,  3,  4],
+            [ 5,  6,  7,  8],
+            [ 9, 10, 11, 12],
+            [13, 14, 15, 16],
+        ];
+        assert_eq!(Slice2dMut::new(&mut a).slice((..2, ..3)) + Slice2dMut::new(&mut b).slice((2.., 1..)), Vec2d(
             vec![
                 vec![11, 13, 15],
                 vec![19, 21, 23],
@@ -228,62 +239,50 @@ mod tests {
 
     #[test]
     fn slice2d_sub() {
-        assert_eq!(Slice2d::<[i32; 0]>::new(&[]) - Slice2d::new(&[]), Vec2d(vec![]));
-        assert_eq!(Slice2d::new(&[[1]]) - Slice2d::new(&[[2]]), Vec2d(vec![vec![-1]]));
-        assert_eq!(Slice2d::new(&[[1.1]]) - Slice2d::new(&[[2.2]]), Vec2d(vec![vec![1.1 - 2.2]]));
-        assert_eq!(Slice2d::new(
-            &[
-                [1, 2, 3],
-                [4, 5, 6],
-            ]
-        ) - Slice2d::new(
-            &[
-                [ 7,  8,  9],
-                [10, 11, 12],
-            ]
-        ), Vec2d(
+        let mut a = [];
+        let mut b = [];
+        assert_eq!(Slice2dMut::<[i32; 0]>::new(&mut a) - Slice2dMut::new(&mut b), Vec2d(vec![]));
+
+        let mut a = [[1]];
+        let mut b = [[2]];
+        assert_eq!(Slice2dMut::new(&mut a) - Slice2dMut::new(&mut b), Vec2d(vec![vec![-1]]));
+
+        let mut a = [[1.1]];
+        let mut b = [[2.2]];
+        assert_eq!(Slice2dMut::new(&mut a) - Slice2dMut::new(&mut b), Vec2d(vec![vec![1.1 - 2.2]]));
+
+        let mut a = [
+            [1, 2, 3],
+            [4, 5, 6],
+        ];
+        let mut b = [
+            [ 7,  8,  9],
+            [10, 11, 12],
+        ];
+        assert_eq!(Slice2dMut::new(&mut a) - Slice2dMut::new(&mut b), Vec2d(
             vec![
                 vec![-6, -6, -6],
                 vec![-6, -6, -6],
             ]
         ));
 
-        assert_eq!(Slice2d::new(
-            &[
-                [ 1,  2,  3,  4],
-                [ 5,  6,  7,  8],
-                [ 9, 10, 11, 12],
-                [13, 14, 15, 16],
-            ]
-        ).slice((..2, ..3)) - Slice2d::new(
-            &[
-                [ 1,  2,  3,  4],
-                [ 5,  6,  7,  8],
-                [ 9, 10, 11, 12],
-                [13, 14, 15, 16],
-            ]
-        ).slice((2.., 1..)), Vec2d(
+        let mut a = [
+            [ 1,  2,  3,  4],
+            [ 5,  6,  7,  8],
+            [ 9, 10, 11, 12],
+            [13, 14, 15, 16],
+        ];
+        let mut b = [
+            [ 1,  2,  3,  4],
+            [ 5,  6,  7,  8],
+            [ 9, 10, 11, 12],
+            [13, 14, 15, 16],
+        ];
+        assert_eq!(Slice2dMut::new(&mut a).slice((..2, ..3)) - Slice2dMut::new(&mut b).slice((2.., 1..)), Vec2d(
             vec![
                 vec![-9, -9, -9],
                 vec![-9, -9, -9],
             ]
         ));
-    }
-
-    #[test]
-    fn slice2d_clone() {
-        let a = Slice2d::new(&[[1]]);
-        let b = Slice2d::new(&[[2]]);
-        let c = a.clone() + b.clone();
-        assert_eq!(a, Slice2d::new(&[[1]]));
-        assert_eq!(b, Slice2d::new(&[[2]]));
-        assert_eq!(c, Vec2d(vec![vec![3]]));
-
-        let a = Slice2d::new(&[[1]]);
-        let b = Slice2d::new(&[[2]]);
-        let c = a.clone() - b.clone();
-        assert_eq!(a, Slice2d::new(&[[1]]));
-        assert_eq!(b, Slice2d::new(&[[2]]));
-        assert_eq!(c, Vec2d(vec![vec![-1]]));
     }
 }
