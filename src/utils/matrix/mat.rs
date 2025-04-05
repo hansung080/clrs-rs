@@ -1,6 +1,6 @@
 use std::ops::{Add, AddAssign, Deref, DerefMut, Sub, SubAssign};
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Mat<T, const M: usize, const N: usize>(pub [[T; N]; M]);
 
 impl<T, const M: usize, const N: usize> Deref for Mat<T, M, N> {
@@ -197,22 +197,5 @@ mod tests {
                 [-6, -6, -6],
             ]
         ));
-    }
-
-    #[test]
-    fn mat_copy() {
-        let a = Mat([[1]]);
-        let b = Mat([[2]]);
-        let c = a + b;
-        assert_eq!(a, Mat([[1]]));
-        assert_eq!(b, Mat([[2]]));
-        assert_eq!(c, Mat([[3]]));
-
-        let a = Mat([[1]]);
-        let b = Mat([[2]]);
-        let c = a - b;
-        assert_eq!(a, Mat([[1]]));
-        assert_eq!(b, Mat([[2]]));
-        assert_eq!(c, Mat([[-1]]));
     }
 }

@@ -5,6 +5,21 @@ use crate::utils::ops::{IntoRange, Slice};
 pub struct Vec2d<T>(pub Vec<Vec<T>>);
 
 impl<T> Vec2d<T> {
+    pub fn defaults((row_len, col_len): (usize, usize)) -> Self
+    where
+        T: Default,
+    {
+        let mut result = Vec2d(Vec::with_capacity(row_len));
+        for _ in 0..row_len {
+            let mut result_row = Vec::with_capacity(col_len);
+            for _ in 0..col_len {
+                result_row.push(T::default());
+            }
+            result.push(result_row);
+        }
+        result
+    }
+
     pub fn shape(&self) -> (usize, usize) {
         (self.len(), if self.len() == 0 { 0 } else { self[0].len() })
     }
@@ -24,7 +39,7 @@ impl<T> DerefMut for Vec2d<T> {
     }
 }
 
-impl<T, Rng1, Rng2> Slice<(Rng1, Rng2)> for Vec2d<T>
+impl<T, Rng1, Rng2> Slice<'_, (Rng1, Rng2)> for Vec2d<T>
 where
     T: Copy,
     Rng1: IntoRange<usize>,
@@ -371,23 +386,6 @@ mod tests {
                 vec![-9, -9, -9],
             ]
         ));
-    }
-
-    #[test]
-    fn vec2d_clone() {
-        let a = Vec2d(vec![vec![1]]);
-        let b = Vec2d(vec![vec![2]]);
-        let c = a.clone() + b.clone();
-        assert_eq!(a, Vec2d(vec![vec![1]]));
-        assert_eq!(b, Vec2d(vec![vec![2]]));
-        assert_eq!(c, Vec2d(vec![vec![3]]));
-
-        let a = Vec2d(vec![vec![1]]);
-        let b = Vec2d(vec![vec![2]]);
-        let c = a.clone() - b.clone();
-        assert_eq!(a, Vec2d(vec![vec![1]]));
-        assert_eq!(b, Vec2d(vec![vec![2]]));
-        assert_eq!(c, Vec2d(vec![vec![-1]]));
     }
 }
 

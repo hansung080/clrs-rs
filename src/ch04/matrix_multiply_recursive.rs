@@ -2,6 +2,17 @@ use std::ops::{AddAssign, Mul};
 use crate::utils;
 use crate::utils::matrix::Mat;
 
+/*
+    Divide and Conquer Algorithm for Matrix Multiplication
+    A = [[A00, A01], [A10, A11]]
+    B = [[B00, B01], [B10, B11]]
+    C = [[C00, C01], [C10, C11]]
+
+    C00 += A00 * B00 + A01 * B10
+    C01 += A00 * B01 + A01 * B11
+    C10 += A10 * B00 + A11 * B10
+    C11 += A10 * B01 + A11 * B11
+*/
 pub fn matrix_multiply_recursive<T, const N: usize>(a: &Mat<T, N, N>, b: &Mat<T, N, N>) -> Mat<T, N, N>
 where
     T: Mul<Output = T> + AddAssign + Default + Copy,
@@ -14,17 +25,6 @@ where
     c
 }
 
-/*
-    Divide and Conquer Algorithm for Matrix Multiplication
-    A = [[A00, A01], [A10, A11]]
-    B = [[B00, B01], [B10, B11]]
-    C = [[C00, C01], [C10, C11]]
-
-    C00 += A00 * B00 + A01 * B10
-    C01 += A00 * B01 + A01 * B11
-    C10 += A10 * B00 + A11 * B10
-    C11 += A10 * B01 + A11 * B11
-*/
 fn matrix_multiply_recursive_aux<T, const N: usize>(
     a: &Mat<T, N, N>,
     b: &Mat<T, N, N>,

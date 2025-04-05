@@ -10,8 +10,11 @@ pub struct Slice2d<'a, T: 'a> {
     col: Range<usize>,
 }
 
-impl<'a, T: Len> Slice2d<'a, T> {
-    pub fn new(slice: &'a [T]) -> Self {
+impl<'a, T> Slice2d<'a, T> {
+    pub fn new(slice: &'a [T]) -> Self
+    where
+        T: Len,
+    {
         Slice2d {
             slice,
             row: 0..slice.len(),
@@ -40,7 +43,7 @@ where
 
 impl<'a, T> PartialEq for Slice2d<'a, T>
 where
-    T: Index<usize> + Len,
+    T: Index<usize>,
     <T as Index<usize>>::Output: PartialEq,
 {
     fn eq(&self, other: &Self) -> bool {
@@ -70,7 +73,7 @@ where
     }
 }
 
-impl<'a, T, Rng1, Rng2> Slice<(Rng1, Rng2)> for Slice2d<'a, T>
+impl<'a, T, Rng1, Rng2> Slice<'_, (Rng1, Rng2)> for Slice2d<'a, T>
 where
     Rng1: IntoRange<usize>,
     Rng2: IntoRange<usize>,
@@ -78,9 +81,8 @@ where
     type Output = Self;
 
     fn slice(&self, (row, col): (Rng1, Rng2)) -> Self::Output {
-        let (row, col) =
-            (row.into_range(Range { start: 0, end: self.row.len() }),
-             col.into_range(Range { start: 0, end: self.col.len() }));
+        let row = row.into_range(Range { start: 0, end: self.row.len() });
+        let col = col.into_range(Range { start: 0, end: self.col.len() });
         assert!(row.start <= row.end, "row range index starts at {} but ends at {}", row.start, row.end);
         assert!(col.start <= col.end, "column range index starts at {} but ends at {}", col.start, col.end);
         assert!(row.end <= self.row.len(), "row range end index {} out of range for row of length {}", row.end, self.row.len());
@@ -96,7 +98,19 @@ where
 
 impl<'a, T> Add for Slice2d<'a, T>
 where
-    T: Index<usize> + Len,
+    T: Index<usize>,
+    <T as Index<usize>>::Output: Add<Output = <T as Index<usize>>::Output> + Copy,
+{
+    type Output = Vec2d<<T as Index<usize>>::Output>;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        &self + &rhs
+    }
+}
+
+impl<'a, T> Add for &Slice2d<'a, T>
+where
+    T: Index<usize>,
     <T as Index<usize>>::Output: Add<Output = <T as Index<usize>>::Output> + Copy,
 {
     type Output = Vec2d<<T as Index<usize>>::Output>;
@@ -118,7 +132,19 @@ where
 
 impl<'a, T> Sub for Slice2d<'a, T>
 where
-    T: Index<usize> + Len,
+    T: Index<usize>,
+    <T as Index<usize>>::Output: Sub<Output = <T as Index<usize>>::Output> + Copy,
+{
+    type Output = Vec2d<<T as Index<usize>>::Output>;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        &self - &rhs
+    }
+}
+
+impl<'a, T> Sub for &Slice2d<'a, T>
+where
+    T: Index<usize>,
     <T as Index<usize>>::Output: Sub<Output = <T as Index<usize>>::Output> + Copy,
 {
     type Output = Vec2d<<T as Index<usize>>::Output>;
@@ -186,6 +212,7 @@ mod tests {
     fn slice2d_add() {
         assert_eq!(Slice2d::<[i32; 0]>::new(&[]) + Slice2d::new(&[]), Vec2d(vec![]));
         assert_eq!(Slice2d::new(&[[1]]) + Slice2d::new(&[[2]]), Vec2d(vec![vec![3]]));
+        assert_eq!(&Slice2d::new(&[[1]]) + &Slice2d::new(&[[2]]), Vec2d(vec![vec![3]]));
         assert_eq!(Slice2d::new(&[[1.1]]) + Slice2d::new(&[[2.2]]), Vec2d(vec![vec![1.1 + 2.2]]));
         assert_eq!(Slice2d::new(
             &[
@@ -230,6 +257,7 @@ mod tests {
     fn slice2d_sub() {
         assert_eq!(Slice2d::<[i32; 0]>::new(&[]) - Slice2d::new(&[]), Vec2d(vec![]));
         assert_eq!(Slice2d::new(&[[1]]) - Slice2d::new(&[[2]]), Vec2d(vec![vec![-1]]));
+        assert_eq!(&Slice2d::new(&[[1]]) - &Slice2d::new(&[[2]]), Vec2d(vec![vec![-1]]));
         assert_eq!(Slice2d::new(&[[1.1]]) - Slice2d::new(&[[2.2]]), Vec2d(vec![vec![1.1 - 2.2]]));
         assert_eq!(Slice2d::new(
             &[
@@ -268,22 +296,5 @@ mod tests {
                 vec![-9, -9, -9],
             ]
         ));
-    }
-
-    #[test]
-    fn slice2d_clone() {
-        let a = Slice2d::new(&[[1]]);
-        let b = Slice2d::new(&[[2]]);
-        let c = a.clone() + b.clone();
-        assert_eq!(a, Slice2d::new(&[[1]]));
-        assert_eq!(b, Slice2d::new(&[[2]]));
-        assert_eq!(c, Vec2d(vec![vec![3]]));
-
-        let a = Slice2d::new(&[[1]]);
-        let b = Slice2d::new(&[[2]]);
-        let c = a.clone() - b.clone();
-        assert_eq!(a, Slice2d::new(&[[1]]));
-        assert_eq!(b, Slice2d::new(&[[2]]));
-        assert_eq!(c, Vec2d(vec![vec![-1]]));
     }
 }
