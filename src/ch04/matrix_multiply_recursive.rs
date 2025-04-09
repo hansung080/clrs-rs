@@ -40,7 +40,7 @@ where
     T: Mul<Output = T> + AddAssign + Copy,
 {
     if n == 1 {
-        c[c_i][c_j] += a[a_i][a_j] * b[b_i][b_j];
+        c[(c_i, c_j)] += a[(a_i, a_j)] * b[(b_i, b_j)];
         return;
     }
     let h = n / 2;

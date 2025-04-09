@@ -25,6 +25,22 @@ impl<'a, T> Slice2d<'a, T> {
     pub fn shape(&self) -> (usize, usize) {
         (self.row.len(), self.col.len())
     }
+
+    pub fn to_vec2d(&self) -> Vec2d<<T as Index<usize>>::Output>
+    where
+        T: Index<usize>,
+        <T as Index<usize>>::Output: Copy,
+    {
+        let mut result = Vec2d(Vec::with_capacity(self.row.len()));
+        for i in self.row.clone() {
+            let mut result_row = Vec::with_capacity(self.col.len());
+            for j in self.col.clone() {
+                result_row.push(self.slice[i][j]);
+            }
+            result.push(result_row);
+        }
+        result
+    }
 }
 
 impl<'a, T> Debug for Slice2d<'a , T>
@@ -41,12 +57,13 @@ where
     }
 }
 
-impl<'a, T> PartialEq for Slice2d<'a, T>
+impl<'a, 'b, T, U> PartialEq<Slice2d<'b, U>> for Slice2d<'a, T>
 where
     T: Index<usize>,
-    <T as Index<usize>>::Output: PartialEq,
+    <T as Index<usize>>::Output: PartialEq<<U as Index<usize>>::Output>,
+    U: Index<usize>,
 {
-    fn eq(&self, other: &Self) -> bool {
+    fn eq(&self, other: &Slice2d<'b, U>) -> bool {
         if self.shape() != other.shape() { return false; }
 
         for i in 0..self.row.len() {
@@ -96,26 +113,30 @@ where
     }
 }
 
-impl<'a, T> Add for Slice2d<'a, T>
+impl<'a, T, Rhs> Add<Rhs> for Slice2d<'a, T>
 where
     T: Index<usize>,
     <T as Index<usize>>::Output: Add<Output = <T as Index<usize>>::Output> + Copy,
+    Rhs: AsRef<Slice2d<'a, T>>,
 {
     type Output = Vec2d<<T as Index<usize>>::Output>;
 
-    fn add(self, rhs: Self) -> Self::Output {
-        &self + &rhs
+    #[inline(always)]
+    fn add(self, rhs: Rhs) -> Self::Output {
+        &self + rhs
     }
 }
 
-impl<'a, T> Add for &Slice2d<'a, T>
+impl<'a, T, Rhs> Add<Rhs> for &Slice2d<'a, T>
 where
     T: Index<usize>,
     <T as Index<usize>>::Output: Add<Output = <T as Index<usize>>::Output> + Copy,
+    Rhs: AsRef<Slice2d<'a, T>>,
 {
     type Output = Vec2d<<T as Index<usize>>::Output>;
 
-    fn add(self, rhs: Self) -> Self::Output {
+    fn add(self, rhs: Rhs) -> Self::Output {
+        let rhs = rhs.as_ref();
         let (row_len, col_len) = self.shape();
         assert_eq!((row_len, col_len), rhs.shape(), "mismatched shape");
         let mut result = Vec2d(Vec::with_capacity(row_len));
@@ -130,26 +151,30 @@ where
     }
 }
 
-impl<'a, T> Sub for Slice2d<'a, T>
+impl<'a, T, Rhs> Sub<Rhs> for Slice2d<'a, T>
 where
     T: Index<usize>,
     <T as Index<usize>>::Output: Sub<Output = <T as Index<usize>>::Output> + Copy,
+    Rhs: AsRef<Slice2d<'a, T>>,
 {
     type Output = Vec2d<<T as Index<usize>>::Output>;
 
-    fn sub(self, rhs: Self) -> Self::Output {
-        &self - &rhs
+    #[inline(always)]
+    fn sub(self, rhs: Rhs) -> Self::Output {
+        &self - rhs
     }
 }
 
-impl<'a, T> Sub for &Slice2d<'a, T>
+impl<'a, T, Rhs> Sub<Rhs> for &Slice2d<'a, T>
 where
     T: Index<usize>,
     <T as Index<usize>>::Output: Sub<Output = <T as Index<usize>>::Output> + Copy,
+    Rhs: AsRef<Slice2d<'a, T>>,
 {
     type Output = Vec2d<<T as Index<usize>>::Output>;
 
-    fn sub(self, rhs: Self) -> Self::Output {
+    fn sub(self, rhs: Rhs) -> Self::Output {
+        let rhs = rhs.as_ref();
         let (row_len, col_len) = self.shape();
         assert_eq!((row_len, col_len), rhs.shape(), "mismatched shape");
         let mut result = Vec2d(Vec::with_capacity(row_len));
@@ -161,6 +186,12 @@ where
             result.push(result_row);
         }
         result
+    }
+}
+
+impl<'a, T> AsRef<Slice2d<'a, T>> for Slice2d<'a, T> {
+    fn as_ref(&self) -> &Slice2d<'a, T> {
+        self
     }
 }
 
@@ -183,10 +214,10 @@ mod tests {
         assert_eq!(a[(1, 2)], 7);
         assert_eq!(a[(3, 3)], 16);
 
-        assert_eq!(a.slice((1..3, 1..3)), Slice2d::new(&[[6, 7, 0, 0], [10, 11, 0, 0]]).slice((.., 0..2)));
-        assert_eq!(a.slice((1..=2, 1..=2)), Slice2d::new(&[[6, 7, 0, 0], [10, 11, 0, 0]]).slice((.., ..2)));
-        assert_eq!(a.slice((1.., 1..)), Slice2d::new(&[[6, 7, 8, 0], [10, 11, 12, 0], [14, 15, 16, 0]]).slice((.., 0..3)));
-        assert_eq!(a.slice((..3, ..3)), Slice2d::new(&[[1, 2, 3, 0], [5, 6, 7, 0], [9, 10, 11, 0]]).slice((.., ..3)));
+        assert_eq!(a.slice((1..3, 1..3)), Slice2d::new(&[[6, 7], [10, 11]]));
+        assert_eq!(a.slice((1..=2, 1..=2)), Slice2d::new(&[[6, 7], [10, 11]]));
+        assert_eq!(a.slice((1.., 1..)), Slice2d::new(&[[6, 7, 8], [10, 11, 12], [14, 15, 16]]));
+        assert_eq!(a.slice((..3, ..3)), Slice2d::new(&[[1, 2, 3], [5, 6, 7], [9, 10, 11]]));
         assert_eq!(a.slice((.., ..)), Slice2d::new(&[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 16]]));
 
         let a = a.slice((1..3, 1..));
@@ -212,7 +243,6 @@ mod tests {
     fn slice2d_add() {
         assert_eq!(Slice2d::<[i32; 0]>::new(&[]) + Slice2d::new(&[]), Vec2d(vec![]));
         assert_eq!(Slice2d::new(&[[1]]) + Slice2d::new(&[[2]]), Vec2d(vec![vec![3]]));
-        assert_eq!(&Slice2d::new(&[[1]]) + &Slice2d::new(&[[2]]), Vec2d(vec![vec![3]]));
         assert_eq!(Slice2d::new(&[[1.1]]) + Slice2d::new(&[[2.2]]), Vec2d(vec![vec![1.1 + 2.2]]));
         assert_eq!(Slice2d::new(
             &[
@@ -251,6 +281,18 @@ mod tests {
                 vec![19, 21, 23],
             ]
         ));
+    }
+
+    #[test]
+    fn slice2d_add_overloading() {
+        assert_eq!(Slice2d::new(&[[1]]) + Slice2d::new(&[[2]]), Vec2d(vec![vec![3]]));
+        assert_eq!(Slice2d::new(&[[1]]) + &Slice2d::new(&[[2]]), Vec2d(vec![vec![3]]));
+        assert_eq!(&Slice2d::new(&[[1]]) + Slice2d::new(&[[2]]), Vec2d(vec![vec![3]]));
+        assert_eq!(&Slice2d::new(&[[1]]) + &Slice2d::new(&[[2]]), Vec2d(vec![vec![3]]));
+        assert_eq!(&Slice2d::new(&[[1]]) + &Slice2d::new(&[[2]]) + &Slice2d::new(&[[3]]).to_vec2d() + &Slice2d::new(&[[4]]).to_vec2d(), Vec2d(vec![vec![10]]));
+        let a = &mut Slice2d::new(&[[1]]);
+        let b = &mut Slice2d::new(&[[2]]);
+        assert_eq!(&*a + &*b, Vec2d(vec![vec![3]]));
     }
 
     #[test]
@@ -296,5 +338,17 @@ mod tests {
                 vec![-9, -9, -9],
             ]
         ));
+    }
+
+    #[test]
+    fn slice2d_sub_overloading() {
+        assert_eq!(Slice2d::new(&[[1]]) - Slice2d::new(&[[2]]), Vec2d(vec![vec![-1]]));
+        assert_eq!(Slice2d::new(&[[1]]) - &Slice2d::new(&[[2]]), Vec2d(vec![vec![-1]]));
+        assert_eq!(&Slice2d::new(&[[1]]) - Slice2d::new(&[[2]]), Vec2d(vec![vec![-1]]));
+        assert_eq!(&Slice2d::new(&[[1]]) - &Slice2d::new(&[[2]]), Vec2d(vec![vec![-1]]));
+        assert_eq!(&Slice2d::new(&[[1]]) - &Slice2d::new(&[[2]]) - &Slice2d::new(&[[3]]).to_vec2d() - &Slice2d::new(&[[4]]).to_vec2d(), Vec2d(vec![vec![-8]]));
+        let a = &mut Slice2d::new(&[[1]]);
+        let b = &mut Slice2d::new(&[[2]]);
+        assert_eq!(&*a - &*b, Vec2d(vec![vec![-1]]));
     }
 }
