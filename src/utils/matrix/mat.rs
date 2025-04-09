@@ -50,6 +50,14 @@ impl<T, const M: usize, const N: usize> Index<(usize, usize)> for Mat<T, M, N> {
     }
 }
 
+impl<T, const M: usize, const N: usize> Index<(usize, usize)> for &Mat<T, M, N> {
+    type Output = T;
+
+    fn index(&self, (row_idx, col_idx): (usize, usize)) -> &Self::Output {
+        &self.0[row_idx][col_idx]
+    }
+}
+
 impl<T, const M: usize, const N: usize> IndexMut<(usize, usize)> for Mat<T, M, N> {
     fn index_mut(&mut self, (row_idx, col_idx): (usize, usize)) -> &mut Self::Output {
         &mut self.0[row_idx][col_idx]
@@ -316,6 +324,7 @@ mod tests {
         assert_eq!(&Mat([[1]]) + Mat([[2]]), Mat([[3]]));
         assert_eq!(&Mat([[1]]) + &Mat([[2]]), Mat([[3]]));
         assert_eq!(&Mat([[1]]) + &Mat([[2]]) + &Mat([[3]]) + &Mat([[4]]), Mat([[10]]));
+        assert_eq!(&Mat([[1]]).slice((.., ..)) + &Mat([[2]]) + &Mat([[3]]) + &Mat([[4]]), Vec2d(vec![vec![10]]));
         let a = &mut Mat([[1]]);
         let b = &mut Mat([[2]]);
         assert_eq!(&*a + &*b, Mat([[3]]));
@@ -401,6 +410,12 @@ mod tests {
         let mut a = Mat([[1]]);
         a += &Mat([[2]]) + &Mat([[3]]) + &Mat([[4]]);
         assert_eq!(a, Mat([[10]]));
+
+        let mut a = Mat([[1]]);
+        let mut a = a.as_slice2d_mut();
+        let mut a = a.slice_mut((.., ..));
+        a += &Mat([[2]]) + &Mat([[3]]) + &Mat([[4]]);
+        assert_eq!(a, Slice2dMut::new(&mut [[10]]));
     }
 
     #[test]
@@ -454,6 +469,7 @@ mod tests {
         assert_eq!(&Mat([[1]]) - Mat([[2]]), Mat([[-1]]));
         assert_eq!(&Mat([[1]]) - &Mat([[2]]), Mat([[-1]]));
         assert_eq!(&Mat([[1]]) - &Mat([[2]]) - &Mat([[3]]) - &Mat([[4]]), Mat([[-8]]));
+        assert_eq!(&Mat([[1]]).slice((.., ..)) - &Mat([[2]]) - &Mat([[3]]) - &Mat([[4]]), Vec2d(vec![vec![-8]]));
         let a = &mut Mat([[1]]);
         let b = &mut Mat([[2]]);
         assert_eq!(&*a - &*b, Mat([[-1]]));
@@ -539,5 +555,11 @@ mod tests {
         let mut a = Mat([[1]]);
         a -= &Mat([[2]]) - &Mat([[3]]) - &Mat([[4]]);
         assert_eq!(a, Mat([[6]]));
+
+        let mut a = Mat([[1]]);
+        let mut a = a.as_slice2d_mut();
+        let mut a = a.slice_mut((.., ..));
+        a -= &Mat([[2]]) - &Mat([[3]]) - &Mat([[4]]);
+        assert_eq!(a, Slice2dMut::new(&mut [[6]]));
     }
 }
