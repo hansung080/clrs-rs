@@ -7,3 +7,14 @@ pub use mat::*;
 pub use vec2d::*;
 pub use slice2d::*;
 pub use slice2d_mut::*;
+
+pub trait Shape {
+    fn shape(&self) -> (usize, usize);
+}
+
+// Blanket Implementation
+impl<T: Shape> Shape for &T {
+    fn shape(&self) -> (usize, usize) {
+        T::shape(self)
+    }
+}

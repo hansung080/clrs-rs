@@ -1,5 +1,5 @@
 use std::ops::{Add, AddAssign, Deref, DerefMut, Index, IndexMut, Sub, SubAssign};
-use crate::utils::matrix::{Slice2d, Slice2dMut, Vec2d};
+use crate::utils::matrix::{Shape, Slice2d, Slice2dMut, Vec2d};
 use crate::utils::ops::{IntoRange, Slice};
 
 #[derive(Debug, PartialEq, Clone)]
@@ -33,6 +33,12 @@ impl<T, const M: usize, const N: usize> Deref for Mat<T, M, N> {
 impl<T, const M: usize, const N: usize> DerefMut for Mat<T, M, N> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
+    }
+}
+
+impl<T, const M: usize, const N: usize> Shape for Mat<T, M, N> {
+    fn shape(&self) -> (usize, usize) {
+        (M, N)
     }
 }
 
@@ -187,21 +193,81 @@ impl<T, const M: usize, const N: usize> AsRef<Mat<T, M, N>> for Mat<T, M, N> {
 
 #[cfg(test)]
 mod tests {
+    use crate::utils::ops::SliceMut;
     use super::*;
 
     #[test]
     fn mat_index_and_slice() {
-        // KHS
+        let a = Mat(
+            [
+                [ 1,  2,  3,  4],
+                [ 5,  6,  7,  8],
+                [ 9, 10, 11, 12],
+                [13, 14, 15, 16],
+            ]
+        );
+
+        assert_eq!(a[(0, 0)], 1);
+        assert_eq!(a[(1, 2)], 7);
+        assert_eq!(a[(3, 3)], 16);
+
+        assert_eq!(a.slice((1..3, 1..3)), Slice2d::new(&[[6, 7], [10, 11]]));
+        assert_eq!(a.slice((1..=2, 1..=2)), Slice2d::new(&[[6, 7], [10, 11]]));
+        assert_eq!(a.slice((1.., 1..)), Slice2d::new(&[[6, 7, 8], [10, 11, 12], [14, 15, 16]]));
+        assert_eq!(a.slice((..3, ..3)), Slice2d::new(&[[1, 2, 3], [5, 6, 7], [9, 10, 11]]));
+        assert_eq!(a.slice((.., ..)), Slice2d::new(&[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 16]]));
+
+        let a = a.slice((1..3, 1..));
+        let b = Mat(
+            [
+                [ 6,  7,  8, 0],
+                [10, 11, 12, 0],
+            ]
+        ).slice((.., ..3));
+        assert_eq!(a, b);
+
+        assert_eq!(a[(0, 0)], 6);
+        assert_eq!(a[(1, 2)], 12);
+
+        assert_eq!(a.slice((1..2, 2..3)), b.slice((1..2, 2..3)));
+        assert_eq!(a.slice((1..=1, 2..=2)), b.slice((1..=1, 2..=2)));
+        assert_eq!(a.slice((1.., 2..)), b.slice((1.., 2..)));
+        assert_eq!(a.slice((..2, ..3)), b.slice((..2, ..3)));
+        assert_eq!(a.slice((.., ..)), b.slice((.., ..)));
     }
 
     #[test]
     fn mat_index_mut() {
-        // KHS
+        let mut a = Mat(
+            [
+                [ 1,  2,  3,  4],
+                [ 5,  6,  7,  8],
+                [ 9, 10, 11, 12],
+                [13, 14, 15, 16],
+            ]
+        );
+
+        a[(0, 0)] += 100;
+        a[(1, 2)] += 100;
+        a[(3, 3)] += 100;
+        assert_eq!(a[(0, 0)], 101);
+        assert_eq!(a[(1, 2)], 107);
+        assert_eq!(a[(3, 3)], 116);
+
+        let mut a = a.as_slice2d_mut();
+        let mut a = a.slice_mut((1..3, 1..));
+
+        a[(0, 0)] += 100;
+        a[(0, 1)] += 100;
+        a[(1, 2)] += 100;
+        assert_eq!(a[(0, 0)], 106);
+        assert_eq!(a[(0, 1)], 207);
+        assert_eq!(a[(1, 2)], 112);
     }
 
     #[test]
     fn mat_add() {
-        assert_eq!(Mat([]) + Mat([]), Mat::<i32, 0, 0>([]));
+        assert_eq!(Mat::<i32, 0, 0>([]) + Mat::<i32, 0, 0>([]), Mat::<i32, 0, 0>([]));
         assert_eq!(Mat([[1]]) + Mat([[2]]), Mat([[3]]));
         assert_eq!(Mat([[1.1]]) + Mat([[2.2]]), Mat([[1.1 + 2.2]]));
         assert_eq!(Mat(
@@ -220,6 +286,27 @@ mod tests {
                 [14, 16, 18],
             ]
         ));
+
+        assert_eq!(Mat(
+            [
+                [ 1,  2,  3,  4],
+                [ 5,  6,  7,  8],
+                [ 9, 10, 11, 12],
+                [13, 14, 15, 16],
+            ]
+        ).slice((..2, ..3)) + Mat(
+            [
+                [ 1,  2,  3,  4],
+                [ 5,  6,  7,  8],
+                [ 9, 10, 11, 12],
+                [13, 14, 15, 16],
+            ]
+        ).slice((2.., 1..)), Vec2d(
+            vec![
+                vec![11, 13, 15],
+                vec![19, 21, 23],
+            ]
+        ));
     }
 
     #[test]
@@ -236,8 +323,8 @@ mod tests {
 
     #[test]
     fn mat_add_assign() {
-        let mut a = Mat([]);
-        a += Mat([]);
+        let mut a = Mat::<i32, 0, 0>([]);
+        a += Mat::<i32, 0, 0>([]);
         assert_eq!(a, Mat::<i32, 0, 0>([]));
 
         let mut a = Mat([[1]]);
@@ -264,6 +351,31 @@ mod tests {
             [
                 [ 8, 10, 12],
                 [14, 16, 18],
+            ]
+        ));
+
+        let mut a = Mat(
+            [
+                [ 1,  2,  3,  4],
+                [ 5,  6,  7,  8],
+                [ 9, 10, 11, 12],
+                [13, 14, 15, 16],
+            ]
+        );
+        let mut a = a.as_slice2d_mut();
+        let mut a = a.slice_mut((..2, ..3));
+        a += Mat(
+            [
+                [ 1,  2,  3,  4],
+                [ 5,  6,  7,  8],
+                [ 9, 10, 11, 12],
+                [13, 14, 15, 16],
+            ]
+        ).slice((2.., 1..));
+        assert_eq!(a, Slice2dMut::new(
+            &mut [
+                [11, 13, 15],
+                [19, 21, 23],
             ]
         ));
     }
@@ -293,7 +405,7 @@ mod tests {
 
     #[test]
     fn mat_sub() {
-        assert_eq!(Mat([]) - Mat([]), Mat::<i32, 0, 0>([]));
+        assert_eq!(Mat::<i32, 0, 0>([]) - Mat::<i32, 0, 0>([]), Mat::<i32, 0, 0>([]));
         assert_eq!(Mat([[1]]) - Mat([[2]]), Mat([[-1]]));
         assert_eq!(Mat([[1.1]]) - Mat([[2.2]]), Mat([[1.1 - 2.2]]));
         assert_eq!(Mat(
@@ -312,6 +424,27 @@ mod tests {
                 [-6, -6, -6],
             ]
         ));
+
+        assert_eq!(Mat(
+            [
+                [ 1,  2,  3,  4],
+                [ 5,  6,  7,  8],
+                [ 9, 10, 11, 12],
+                [13, 14, 15, 16],
+            ]
+        ).slice((..2, ..3)) - Mat(
+            [
+                [ 1,  2,  3,  4],
+                [ 5,  6,  7,  8],
+                [ 9, 10, 11, 12],
+                [13, 14, 15, 16],
+            ]
+        ).slice((2.., 1..)), Vec2d(
+            vec![
+                vec![-9, -9, -9],
+                vec![-9, -9, -9],
+            ]
+        ));
     }
 
     #[test]
@@ -328,8 +461,8 @@ mod tests {
 
     #[test]
     fn mat_sub_assign() {
-        let mut a = Mat([]);
-        a -= Mat([]);
+        let mut a = Mat::<i32, 0, 0>([]);
+        a -= Mat::<i32, 0, 0>([]);
         assert_eq!(a, Mat::<i32, 0, 0>([]));
 
         let mut a = Mat([[1]]);
@@ -356,6 +489,31 @@ mod tests {
             [
                 [-6, -6, -6],
                 [-6, -6, -6],
+            ]
+        ));
+
+        let mut a = Mat(
+            [
+                [ 1,  2,  3,  4],
+                [ 5,  6,  7,  8],
+                [ 9, 10, 11, 12],
+                [13, 14, 15, 16],
+            ]
+        );
+        let mut a = a.as_slice2d_mut();
+        let mut a = a.slice_mut((..2, ..3));
+        a -= Mat(
+            [
+                [ 1,  2,  3,  4],
+                [ 5,  6,  7,  8],
+                [ 9, 10, 11, 12],
+                [13, 14, 15, 16],
+            ]
+        ).slice((2.., 1..));
+        assert_eq!(a, Slice2dMut::new(
+            &mut [
+                [-9, -9, -9],
+                [-9, -9, -9],
             ]
         ));
     }

@@ -1,6 +1,6 @@
 use std::fmt::{self, Debug, Formatter};
 use std::ops::{Add, Index, Range, Sub};
-use crate::utils::matrix::Vec2d;
+use crate::utils::matrix::{Shape, Vec2d};
 use crate::utils::ops::{IntoRange, Len, Slice};
 
 #[derive(Clone)]
@@ -20,10 +20,6 @@ impl<'a, T> Slice2d<'a, T> {
             row: 0..slice.len(),
             col: 0..if slice.len() == 0 { 0 } else { slice[0].len() },
         }
-    }
-
-    pub fn shape(&self) -> (usize, usize) {
-        (self.row.len(), self.col.len())
     }
 
     pub fn to_vec2d(&self) -> Vec2d<<T as Index<usize>>::Output>
@@ -77,7 +73,26 @@ where
     }
 }
 
+impl<'a, T> Shape for Slice2d<'a, T> {
+    fn shape(&self) -> (usize, usize) {
+        (self.row.len(), self.col.len())
+    }
+}
+
 impl<'a, T> Index<(usize, usize)> for Slice2d<'a, T>
+where
+    T: Index<usize>,
+{
+    type Output = <T as Index<usize>>::Output;
+
+    fn index(&self, (row_idx, col_idx): (usize, usize)) -> &Self::Output {
+        assert!(row_idx < self.row.len(), "row index out of bounds: the len is {} but the index is {}", self.row.len(), row_idx);
+        assert!(col_idx < self.col.len(), "column index out of bounds: the len is {} but the index is {}", self.col.len(), col_idx);
+        &self.slice[self.row.start + row_idx][self.col.start + col_idx]
+    }
+}
+
+impl<'a, T> Index<(usize, usize)> for &Slice2d<'a, T>
 where
     T: Index<usize>,
 {
@@ -116,8 +131,9 @@ where
 impl<'a, T, Rhs> Add<Rhs> for Slice2d<'a, T>
 where
     T: Index<usize>,
-    <T as Index<usize>>::Output: Add<Output = <T as Index<usize>>::Output> + Copy,
-    Rhs: AsRef<Slice2d<'a, T>>,
+    <T as Index<usize>>::Output: Add<<Rhs as Index<(usize, usize)>>::Output, Output = <T as Index<usize>>::Output> + Copy,
+    Rhs: Shape + Index<(usize, usize)>,
+    <Rhs as Index<(usize, usize)>>::Output: Copy,
 {
     type Output = Vec2d<<T as Index<usize>>::Output>;
 
@@ -130,20 +146,20 @@ where
 impl<'a, T, Rhs> Add<Rhs> for &Slice2d<'a, T>
 where
     T: Index<usize>,
-    <T as Index<usize>>::Output: Add<Output = <T as Index<usize>>::Output> + Copy,
-    Rhs: AsRef<Slice2d<'a, T>>,
+    <T as Index<usize>>::Output: Add<<Rhs as Index<(usize, usize)>>::Output, Output = <T as Index<usize>>::Output> + Copy,
+    Rhs: Shape + Index<(usize, usize)>,
+    <Rhs as Index<(usize, usize)>>::Output: Copy,
 {
     type Output = Vec2d<<T as Index<usize>>::Output>;
 
     fn add(self, rhs: Rhs) -> Self::Output {
-        let rhs = rhs.as_ref();
         let (row_len, col_len) = self.shape();
         assert_eq!((row_len, col_len), rhs.shape(), "mismatched shape");
         let mut result = Vec2d(Vec::with_capacity(row_len));
         for i in 0..row_len {
             let mut result_row = Vec::with_capacity(col_len);
             for j in 0..col_len {
-                result_row.push(self.slice[self.row.start + i][self.col.start + j] + rhs.slice[rhs.row.start + i][rhs.col.start + j]);
+                result_row.push(self.slice[self.row.start + i][self.col.start + j] + rhs[(i, j)]);
             }
             result.push(result_row);
         }
@@ -154,8 +170,9 @@ where
 impl<'a, T, Rhs> Sub<Rhs> for Slice2d<'a, T>
 where
     T: Index<usize>,
-    <T as Index<usize>>::Output: Sub<Output = <T as Index<usize>>::Output> + Copy,
-    Rhs: AsRef<Slice2d<'a, T>>,
+    <T as Index<usize>>::Output: Sub<<Rhs as Index<(usize, usize)>>::Output, Output = <T as Index<usize>>::Output> + Copy,
+    Rhs: Shape + Index<(usize, usize)>,
+    <Rhs as Index<(usize, usize)>>::Output: Copy,
 {
     type Output = Vec2d<<T as Index<usize>>::Output>;
 
@@ -168,30 +185,24 @@ where
 impl<'a, T, Rhs> Sub<Rhs> for &Slice2d<'a, T>
 where
     T: Index<usize>,
-    <T as Index<usize>>::Output: Sub<Output = <T as Index<usize>>::Output> + Copy,
-    Rhs: AsRef<Slice2d<'a, T>>,
+    <T as Index<usize>>::Output: Sub<<Rhs as Index<(usize, usize)>>::Output, Output = <T as Index<usize>>::Output> + Copy,
+    Rhs: Shape + Index<(usize, usize)>,
+    <Rhs as Index<(usize, usize)>>::Output: Copy,
 {
     type Output = Vec2d<<T as Index<usize>>::Output>;
 
     fn sub(self, rhs: Rhs) -> Self::Output {
-        let rhs = rhs.as_ref();
         let (row_len, col_len) = self.shape();
         assert_eq!((row_len, col_len), rhs.shape(), "mismatched shape");
         let mut result = Vec2d(Vec::with_capacity(row_len));
         for i in 0..row_len {
             let mut result_row = Vec::with_capacity(col_len);
             for j in 0..col_len {
-                result_row.push(self.slice[self.row.start + i][self.col.start + j] - rhs.slice[rhs.row.start + i][rhs.col.start + j]);
+                result_row.push(self.slice[self.row.start + i][self.col.start + j] - rhs[(i, j)]);
             }
             result.push(result_row);
         }
         result
-    }
-}
-
-impl<'a, T> AsRef<Slice2d<'a, T>> for Slice2d<'a, T> {
-    fn as_ref(&self) -> &Slice2d<'a, T> {
-        self
     }
 }
 
@@ -241,7 +252,7 @@ mod tests {
 
     #[test]
     fn slice2d_add() {
-        assert_eq!(Slice2d::<[i32; 0]>::new(&[]) + Slice2d::new(&[]), Vec2d(vec![]));
+        assert_eq!(Slice2d::<[i32; 0]>::new(&[]) + Slice2d::<[i32; 0]>::new(&[]), Vec2d::<i32>(vec![]));
         assert_eq!(Slice2d::new(&[[1]]) + Slice2d::new(&[[2]]), Vec2d(vec![vec![3]]));
         assert_eq!(Slice2d::new(&[[1.1]]) + Slice2d::new(&[[2.2]]), Vec2d(vec![vec![1.1 + 2.2]]));
         assert_eq!(Slice2d::new(
@@ -289,7 +300,7 @@ mod tests {
         assert_eq!(Slice2d::new(&[[1]]) + &Slice2d::new(&[[2]]), Vec2d(vec![vec![3]]));
         assert_eq!(&Slice2d::new(&[[1]]) + Slice2d::new(&[[2]]), Vec2d(vec![vec![3]]));
         assert_eq!(&Slice2d::new(&[[1]]) + &Slice2d::new(&[[2]]), Vec2d(vec![vec![3]]));
-        assert_eq!(&Slice2d::new(&[[1]]) + &Slice2d::new(&[[2]]) + &Slice2d::new(&[[3]]).to_vec2d() + &Slice2d::new(&[[4]]).to_vec2d(), Vec2d(vec![vec![10]]));
+        assert_eq!(&Slice2d::new(&[[1]]) + &Slice2d::new(&[[2]]) + &Slice2d::new(&[[3]]) + &Slice2d::new(&[[4]]), Vec2d(vec![vec![10]]));
         let a = &mut Slice2d::new(&[[1]]);
         let b = &mut Slice2d::new(&[[2]]);
         assert_eq!(&*a + &*b, Vec2d(vec![vec![3]]));
@@ -297,7 +308,7 @@ mod tests {
 
     #[test]
     fn slice2d_sub() {
-        assert_eq!(Slice2d::<[i32; 0]>::new(&[]) - Slice2d::new(&[]), Vec2d(vec![]));
+        assert_eq!(Slice2d::<[i32; 0]>::new(&[]) - Slice2d::<[i32; 0]>::new(&[]), Vec2d::<i32>(vec![]));
         assert_eq!(Slice2d::new(&[[1]]) - Slice2d::new(&[[2]]), Vec2d(vec![vec![-1]]));
         assert_eq!(&Slice2d::new(&[[1]]) - &Slice2d::new(&[[2]]), Vec2d(vec![vec![-1]]));
         assert_eq!(Slice2d::new(&[[1.1]]) - Slice2d::new(&[[2.2]]), Vec2d(vec![vec![1.1 - 2.2]]));
@@ -346,7 +357,7 @@ mod tests {
         assert_eq!(Slice2d::new(&[[1]]) - &Slice2d::new(&[[2]]), Vec2d(vec![vec![-1]]));
         assert_eq!(&Slice2d::new(&[[1]]) - Slice2d::new(&[[2]]), Vec2d(vec![vec![-1]]));
         assert_eq!(&Slice2d::new(&[[1]]) - &Slice2d::new(&[[2]]), Vec2d(vec![vec![-1]]));
-        assert_eq!(&Slice2d::new(&[[1]]) - &Slice2d::new(&[[2]]) - &Slice2d::new(&[[3]]).to_vec2d() - &Slice2d::new(&[[4]]).to_vec2d(), Vec2d(vec![vec![-8]]));
+        assert_eq!(&Slice2d::new(&[[1]]) - &Slice2d::new(&[[2]]) - &Slice2d::new(&[[3]]) - &Slice2d::new(&[[4]]), Vec2d(vec![vec![-8]]));
         let a = &mut Slice2d::new(&[[1]]);
         let b = &mut Slice2d::new(&[[2]]);
         assert_eq!(&*a - &*b, Vec2d(vec![vec![-1]]));

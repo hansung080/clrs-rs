@@ -1,6 +1,6 @@
 use std::fmt::{self, Debug, Formatter};
 use std::ops::{Add, AddAssign, Index, IndexMut, Range, Sub, SubAssign};
-use crate::utils::matrix::{Slice2d, Vec2d};
+use crate::utils::matrix::{Shape, Slice2d, Vec2d};
 use crate::utils::ops::{IntoRange, Len, Slice, SliceMut};
 
 pub struct Slice2dMut<'a, T: 'a> {
@@ -21,10 +21,6 @@ impl<'a, T> Slice2dMut<'a, T> {
             row: 0..row_len,
             col: 0..col_len,
         }
-    }
-
-    pub fn shape(&self) -> (usize, usize) {
-        (self.row.len(), self.col.len())
     }
 
     pub fn as_slice2d(&self) -> Slice2d<T>
@@ -77,7 +73,26 @@ where
     }
 }
 
+impl<'a, T> Shape for Slice2dMut<'a, T> {
+    fn shape(&self) -> (usize, usize) {
+        (self.row.len(), self.col.len())
+    }
+}
+
 impl<'a, T> Index<(usize, usize)> for Slice2dMut<'a, T>
+where
+    T: Index<usize>,
+{
+    type Output = <T as Index<usize>>::Output;
+
+    fn index(&self, (row_idx, col_idx): (usize, usize)) -> &Self::Output {
+        assert!(row_idx < self.row.len(), "row index out of bounds: the len is {} but the index is {}", self.row.len(), row_idx);
+        assert!(col_idx < self.col.len(), "column index out of bounds: the len is {} but the index is {}", self.col.len(), col_idx);
+        &self.slice[self.row.start + row_idx][self.col.start + col_idx]
+    }
+}
+
+impl<'a, T> Index<(usize, usize)> for &Slice2dMut<'a, T>
 where
     T: Index<usize>,
 {
@@ -141,8 +156,9 @@ where
 impl<'a, T, Rhs> Add<Rhs> for Slice2dMut<'a, T>
 where
     T: Index<usize>,
-    <T as Index<usize>>::Output: Add<Output = <T as Index<usize>>::Output> + Copy,
-    Rhs: AsRef<Slice2dMut<'a, T>>,
+    <T as Index<usize>>::Output: Add<<Rhs as Index<(usize, usize)>>::Output, Output = <T as Index<usize>>::Output> + Copy,
+    Rhs: Shape + Index<(usize, usize)>,
+    <Rhs as Index<(usize, usize)>>::Output: Copy,
 {
     type Output = Vec2d<<T as Index<usize>>::Output>;
 
@@ -155,20 +171,20 @@ where
 impl<'a, T, Rhs> Add<Rhs> for &Slice2dMut<'a, T>
 where
     T: Index<usize>,
-    <T as Index<usize>>::Output: Add<Output = <T as Index<usize>>::Output> + Copy,
-    Rhs: AsRef<Slice2dMut<'a, T>>,
+    <T as Index<usize>>::Output: Add<<Rhs as Index<(usize, usize)>>::Output, Output = <T as Index<usize>>::Output> + Copy,
+    Rhs: Shape + Index<(usize, usize)>,
+    <Rhs as Index<(usize, usize)>>::Output: Copy,
 {
     type Output = Vec2d<<T as Index<usize>>::Output>;
 
     fn add(self, rhs: Rhs) -> Self::Output {
-        let rhs = rhs.as_ref();
         let (row_len, col_len) = self.shape();
         assert_eq!((row_len, col_len), rhs.shape(), "mismatched shape");
         let mut result = Vec2d(Vec::with_capacity(row_len));
         for i in 0..row_len {
             let mut result_row = Vec::with_capacity(col_len);
             for j in 0..col_len {
-                result_row.push(self.slice[self.row.start + i][self.col.start + j] + rhs.slice[rhs.row.start + i][rhs.col.start + j]);
+                result_row.push(self.slice[self.row.start + i][self.col.start + j] + rhs[(i, j)]);
             }
             result.push(result_row);
         }
@@ -179,8 +195,9 @@ where
 impl<'a, T, Rhs> AddAssign<Rhs> for Slice2dMut<'a, T>
 where
     T: IndexMut<usize>,
-    <T as Index<usize>>::Output: AddAssign + Copy,
-    Rhs: AsRef<Slice2dMut<'a, T>>,
+    <T as Index<usize>>::Output: AddAssign<<Rhs as Index<(usize, usize)>>::Output>,
+    Rhs: Shape + Index<(usize, usize)>,
+    <Rhs as Index<(usize, usize)>>::Output: Copy,
 {
     #[inline(always)]
     fn add_assign(mut self: &mut Self, rhs: Rhs) {
@@ -191,16 +208,16 @@ where
 impl<'a, T, Rhs> AddAssign<Rhs> for &mut Slice2dMut<'a, T>
 where
     T: IndexMut<usize>,
-    <T as Index<usize>>::Output: AddAssign + Copy,
-    Rhs: AsRef<Slice2dMut<'a, T>>,
+    <T as Index<usize>>::Output: AddAssign<<Rhs as Index<(usize, usize)>>::Output>,
+    Rhs: Shape + Index<(usize, usize)>,
+    <Rhs as Index<(usize, usize)>>::Output: Copy,
 {
     fn add_assign(&mut self, rhs: Rhs) {
-        let rhs = rhs.as_ref();
         let (row_len, col_len) = self.shape();
         assert_eq!((row_len, col_len), rhs.shape(), "mismatched shape");
         for i in 0..row_len {
             for j in 0..col_len {
-                self.slice[self.row.start + i][self.col.start + j] += rhs.slice[rhs.row.start + i][rhs.col.start + j];
+                self.slice[self.row.start + i][self.col.start + j] += rhs[(i, j)];
             }
         }
     }
@@ -209,8 +226,9 @@ where
 impl<'a, T, Rhs> Sub<Rhs> for Slice2dMut<'a, T>
 where
     T: Index<usize>,
-    <T as Index<usize>>::Output: Sub<Output = <T as Index<usize>>::Output> + Copy,
-    Rhs: AsRef<Slice2dMut<'a, T>>,
+    <T as Index<usize>>::Output: Sub<<Rhs as Index<(usize, usize)>>::Output, Output = <T as Index<usize>>::Output> + Copy,
+    Rhs: Shape + Index<(usize, usize)>,
+    <Rhs as Index<(usize, usize)>>::Output: Copy,
 {
     type Output = Vec2d<<T as Index<usize>>::Output>;
 
@@ -223,20 +241,20 @@ where
 impl<'a, T, Rhs> Sub<Rhs> for &Slice2dMut<'a, T>
 where
     T: Index<usize>,
-    <T as Index<usize>>::Output: Sub<Output = <T as Index<usize>>::Output> + Copy,
-    Rhs: AsRef<Slice2dMut<'a, T>>,
+    <T as Index<usize>>::Output: Sub<<Rhs as Index<(usize, usize)>>::Output, Output = <T as Index<usize>>::Output> + Copy,
+    Rhs: Shape + Index<(usize, usize)>,
+    <Rhs as Index<(usize, usize)>>::Output: Copy,
 {
     type Output = Vec2d<<T as Index<usize>>::Output>;
 
     fn sub(self, rhs: Rhs) -> Self::Output {
-        let rhs = rhs.as_ref();
         let (row_len, col_len) = self.shape();
         assert_eq!((row_len, col_len), rhs.shape(), "mismatched shape");
         let mut result = Vec2d(Vec::with_capacity(row_len));
         for i in 0..row_len {
             let mut result_row = Vec::with_capacity(col_len);
             for j in 0..col_len {
-                result_row.push(self.slice[self.row.start + i][self.col.start + j] - rhs.slice[rhs.row.start + i][rhs.col.start + j]);
+                result_row.push(self.slice[self.row.start + i][self.col.start + j] - rhs[(i, j)]);
             }
             result.push(result_row);
         }
@@ -247,8 +265,9 @@ where
 impl<'a, T, Rhs> SubAssign<Rhs> for Slice2dMut<'a, T>
 where
     T: IndexMut<usize>,
-    <T as Index<usize>>::Output: SubAssign + Copy,
-    Rhs: AsRef<Slice2dMut<'a, T>>,
+    <T as Index<usize>>::Output: SubAssign<<Rhs as Index<(usize, usize)>>::Output>,
+    Rhs: Shape + Index<(usize, usize)>,
+    <Rhs as Index<(usize, usize)>>::Output: Copy,
 {
     #[inline(always)]
     fn sub_assign(mut self: &mut Self, rhs: Rhs) {
@@ -259,24 +278,18 @@ where
 impl<'a, T, Rhs> SubAssign<Rhs> for &mut Slice2dMut<'a, T>
 where
     T: IndexMut<usize>,
-    <T as Index<usize>>::Output: SubAssign + Copy,
-    Rhs: AsRef<Slice2dMut<'a, T>>,
+    <T as Index<usize>>::Output: SubAssign<<Rhs as Index<(usize, usize)>>::Output>,
+    Rhs: Shape + Index<(usize, usize)>,
+    <Rhs as Index<(usize, usize)>>::Output: Copy,
 {
     fn sub_assign(&mut self, rhs: Rhs) {
-        let rhs = rhs.as_ref();
         let (row_len, col_len) = self.shape();
         assert_eq!((row_len, col_len), rhs.shape(), "mismatched shape");
         for i in 0..row_len {
             for j in 0..col_len {
-                self.slice[self.row.start + i][self.col.start + j] -= rhs.slice[rhs.row.start + i][rhs.col.start + j];
+                self.slice[self.row.start + i][self.col.start + j] -= rhs[(i, j)];
             }
         }
-    }
-}
-
-impl<'a, T> AsRef<Slice2dMut<'a, T>> for Slice2dMut<'a, T> {
-    fn as_ref(&self) -> &Slice2dMut<'a, T> {
-        self
     }
 }
 
@@ -369,7 +382,7 @@ mod tests {
     fn slice2d_mut_add() {
         let mut a = [];
         let mut b = [];
-        assert_eq!(Slice2dMut::<[i32; 0]>::new(&mut a) + Slice2dMut::<[i32; 0]>::new(&mut b), Vec2d(vec![]));
+        assert_eq!(Slice2dMut::<[i32; 0]>::new(&mut a) + Slice2dMut::<[i32; 0]>::new(&mut b), Vec2d::<i32>(vec![]));
 
         let mut a = [[1]];
         let mut b = [[2]];
@@ -425,7 +438,7 @@ mod tests {
         assert_eq!(&Slice2dMut::new(&mut a) + &Slice2dMut::new(&mut b), Vec2d(vec![vec![3]]));
         let mut c = [[3]];
         let mut d = [[4]];
-        assert_eq!(&Slice2dMut::new(&mut a) + &Slice2dMut::new(&mut b) + &Slice2dMut::new(&mut c).to_vec2d() + &Slice2dMut::new(&mut d).to_vec2d(), Vec2d(vec![vec![10]]));
+        assert_eq!(&Slice2dMut::new(&mut a) + &Slice2dMut::new(&mut b) + &Slice2dMut::new(&mut c) + &Slice2dMut::new(&mut d), Vec2d(vec![vec![10]]));
         let a = &mut Slice2dMut::new(&mut a);
         let b = &mut Slice2dMut::new(&mut b);
         assert_eq!(&*a + &*b, Vec2d(vec![vec![3]]));
@@ -517,22 +530,20 @@ mod tests {
         a += &Slice2dMut::new(&mut b);
         assert_eq!(a, &mut Slice2dMut::new(&mut expected));
 
-        // KHS
-        // let mut a = [[1]];
-        // let mut c = [[3]];
-        // let mut d = [[4]];
-        // let mut expected = [[10]];
-        // let mut a = Slice2dMut::new(&mut a);
-        // let mut temp = &Slice2dMut::new(&mut b) + &Slice2dMut::new(&mut c) + &Slice2dMut::new(&mut d).to_vec2d();
-        // a += temp.as_slice2d_mut();
-        // assert_eq!(a, Slice2dMut::new(&mut expected));
+        let mut a = [[1]];
+        let mut c = [[3]];
+        let mut d = [[4]];
+        let mut expected = [[10]];
+        let mut a = Slice2dMut::new(&mut a);
+        a += &Slice2dMut::new(&mut b) + &Slice2dMut::new(&mut c) + &Slice2dMut::new(&mut d);
+        assert_eq!(a, Slice2dMut::new(&mut expected));
     }
 
     #[test]
     fn slice2d_mut_sub() {
         let mut a = [];
         let mut b = [];
-        assert_eq!(Slice2dMut::<[i32; 0]>::new(&mut a) - Slice2dMut::<[i32; 0]>::new(&mut b), Vec2d(vec![]));
+        assert_eq!(Slice2dMut::<[i32; 0]>::new(&mut a) - Slice2dMut::<[i32; 0]>::new(&mut b), Vec2d::<i32>(vec![]));
 
         let mut a = [[1]];
         let mut b = [[2]];
@@ -587,7 +598,7 @@ mod tests {
         assert_eq!(&Slice2dMut::new(&mut a) - &Slice2dMut::new(&mut b), Vec2d(vec![vec![-1]]));
         let mut c = [[3]];
         let mut d = [[4]];
-        assert_eq!(&Slice2dMut::new(&mut a) - &Slice2dMut::new(&mut b) - &Slice2dMut::new(&mut c).to_vec2d() - &Slice2dMut::new(&mut d).to_vec2d(), Vec2d(vec![vec![-8]]));
+        assert_eq!(&Slice2dMut::new(&mut a) - &Slice2dMut::new(&mut b) - &Slice2dMut::new(&mut c) - &Slice2dMut::new(&mut d), Vec2d(vec![vec![-8]]));
         let a = &mut Slice2dMut::new(&mut a);
         let b = &mut Slice2dMut::new(&mut b);
         assert_eq!(&*a - &*b, Vec2d(vec![vec![-1]]));
@@ -653,5 +664,38 @@ mod tests {
         let mut b = Slice2dMut::new(&mut b);
         a -= b.slice_mut((2.., 1..));
         assert_eq!(a, Slice2dMut::new(&mut expected).slice_mut((.., ..3)));
+    }
+
+    #[test]
+    fn slice2d_mut_sub_assign_overloading() {
+        let mut a = [[1]];
+        let mut b = [[2]];
+        let mut expected = [[-1]];
+        let mut a = Slice2dMut::new(&mut a);
+        a -= Slice2dMut::new(&mut b);
+        assert_eq!(a, Slice2dMut::new(&mut expected));
+
+        let mut a = [[1]];
+        let mut a = Slice2dMut::new(&mut a);
+        a -= &Slice2dMut::new(&mut b);
+        assert_eq!(a, Slice2dMut::new(&mut expected));
+
+        let mut a = [[1]];
+        let mut a = &mut Slice2dMut::new(&mut a);
+        a -= Slice2dMut::new(&mut b);
+        assert_eq!(a, &mut Slice2dMut::new(&mut expected));
+
+        let mut a = [[1]];
+        let mut a = &mut Slice2dMut::new(&mut a);
+        a -= &Slice2dMut::new(&mut b);
+        assert_eq!(a, &mut Slice2dMut::new(&mut expected));
+
+        let mut a = [[1]];
+        let mut c = [[3]];
+        let mut d = [[4]];
+        let mut expected = [[6]];
+        let mut a = Slice2dMut::new(&mut a);
+        a -= &Slice2dMut::new(&mut b) - &Slice2dMut::new(&mut c) - &Slice2dMut::new(&mut d);
+        assert_eq!(a, Slice2dMut::new(&mut expected));
     }
 }
