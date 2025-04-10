@@ -205,6 +205,25 @@ mod tests {
     use super::*;
 
     #[test]
+    fn mat_debug() {
+        assert_eq!(format!("{:?}", Mat::<i32, 0, 0>([])), String::from("Mat([])"));
+        assert_eq!(format!("{:?}", Mat([[1]])), String::from("Mat([[1]])"));
+        let mut a = Mat([[1, 2], [3, 4]]);
+        assert_eq!(format!("{:?}", a), String::from("Mat([[1, 2], [3, 4]])"));
+        assert_eq!(format!("{:?}", &a), String::from("Mat([[1, 2], [3, 4]])"));
+        assert_eq!(format!("{:?}", &mut a), String::from("Mat([[1, 2], [3, 4]])"));
+    }
+
+    #[test]
+    fn mat_partial_eq() {
+        assert_eq!(Mat([[1]]), Mat([[1]]));
+        assert_eq!(&Mat([[1]]), &Mat([[1]]));
+        assert_eq!(&Mat([[1]]), &mut Mat([[1]]));
+        assert_eq!(&mut Mat([[1]]), &Mat([[1]]));
+        assert_eq!(&mut Mat([[1]]), &mut Mat([[1]]));
+    }
+
+    #[test]
     fn mat_index_and_slice() {
         let a = Mat(
             [

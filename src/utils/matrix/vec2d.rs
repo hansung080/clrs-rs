@@ -1,6 +1,6 @@
 use std::ops::{Add, AddAssign, Deref, DerefMut, Index, IndexMut, Sub, SubAssign};
 use crate::utils::matrix::{Shape, Slice2d, Slice2dMut};
-use crate::utils::ops::{IntoRange, Len, Slice};
+use crate::utils::ops::{IntoRange, Slice};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Vec2d<T>(pub Vec<Vec<T>>);
@@ -221,6 +221,25 @@ where
 mod tests {
     use crate::utils::ops::SliceMut;
     use super::*;
+
+    #[test]
+    fn vec2d_debug() {
+        assert_eq!(format!("{:?}", Vec2d::<i32>(vec![])), String::from("Vec2d([])"));
+        assert_eq!(format!("{:?}", Vec2d(vec![vec![1]])), String::from("Vec2d([[1]])"));
+        let mut a = Vec2d(vec![vec![1, 2], vec![3, 4]]);
+        assert_eq!(format!("{:?}", a), String::from("Vec2d([[1, 2], [3, 4]])"));
+        assert_eq!(format!("{:?}", &a), String::from("Vec2d([[1, 2], [3, 4]])"));
+        assert_eq!(format!("{:?}", &mut a), String::from("Vec2d([[1, 2], [3, 4]])"));
+    }
+
+    #[test]
+    fn vec2d_partial_eq() {
+        assert_eq!(Vec2d(vec![vec![1]]), Vec2d(vec![vec![1]]));
+        assert_eq!(&Vec2d(vec![vec![1]]), &Vec2d(vec![vec![1]]));
+        assert_eq!(&Vec2d(vec![vec![1]]), &mut Vec2d(vec![vec![1]]));
+        assert_eq!(&mut Vec2d(vec![vec![1]]), &Vec2d(vec![vec![1]]));
+        assert_eq!(&mut Vec2d(vec![vec![1]]), &mut Vec2d(vec![vec![1]]));
+    }
 
     #[test]
     fn vec2d_index_and_slice() {

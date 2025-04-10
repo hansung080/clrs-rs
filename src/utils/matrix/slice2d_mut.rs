@@ -298,6 +298,26 @@ mod tests {
     use super::*;
 
     #[test]
+    fn slice2d_mut_debug() {
+        assert_eq!(format!("{:?}", Slice2dMut::<[i32; 0]>::new(&mut [])), String::from("Slice2dMut([])"));
+        assert_eq!(format!("{:?}", Slice2dMut::new(&mut [[1]])), String::from("Slice2dMut([[1]])"));
+        let mut a = [[1, 2], [3, 4]];
+        let mut a = Slice2dMut::new(&mut a);
+        assert_eq!(format!("{:?}", a), String::from("Slice2dMut([[1, 2], [3, 4]])"));
+        assert_eq!(format!("{:?}", &a), String::from("Slice2dMut([[1, 2], [3, 4]])"));
+        assert_eq!(format!("{:?}", &mut a), String::from("Slice2dMut([[1, 2], [3, 4]])"));
+    }
+
+    #[test]
+    fn slice2d_mut_partial_eq() {
+        assert_eq!(Slice2dMut::new(&mut [[1]]), Slice2dMut::new(&mut [[1]]));
+        assert_eq!(&Slice2dMut::new(&mut [[1]]), &Slice2dMut::new(&mut [[1]]));
+        assert_eq!(&Slice2dMut::new(&mut [[1]]), &mut Slice2dMut::new(&mut [[1]]));
+        assert_eq!(&mut Slice2dMut::new(&mut [[1]]), &Slice2dMut::new(&mut [[1]]));
+        assert_eq!(&mut Slice2dMut::new(&mut [[1]]), &mut Slice2dMut::new(&mut [[1]]));
+    }
+
+    #[test]
     fn slice2d_mut_index_and_slice() {
         let mut a = [
             [ 1,  2,  3,  4],

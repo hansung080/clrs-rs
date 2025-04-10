@@ -211,6 +211,25 @@ mod tests {
     use super::*;
 
     #[test]
+    fn slice2d_debug() {
+        assert_eq!(format!("{:?}", Slice2d::<[i32; 0]>::new(&[])), String::from("Slice2d([])"));
+        assert_eq!(format!("{:?}", Slice2d::new(&[[1]])), String::from("Slice2d([[1]])"));
+        let mut a = Slice2d::new(&[[1, 2], [3, 4]]);
+        assert_eq!(format!("{:?}", a), String::from("Slice2d([[1, 2], [3, 4]])"));
+        assert_eq!(format!("{:?}", &a), String::from("Slice2d([[1, 2], [3, 4]])"));
+        assert_eq!(format!("{:?}", &mut a), String::from("Slice2d([[1, 2], [3, 4]])"));
+    }
+
+    #[test]
+    fn slice2d_partial_eq() {
+        assert_eq!(Slice2d::new(&[[1]]), Slice2d::new(&[[1]]));
+        assert_eq!(&Slice2d::new(&[[1]]), &Slice2d::new(&[[1]]));
+        assert_eq!(&Slice2d::new(&[[1]]), &mut Slice2d::new(&[[1]]));
+        assert_eq!(&mut Slice2d::new(&[[1]]), &Slice2d::new(&[[1]]));
+        assert_eq!(&mut Slice2d::new(&[[1]]), &mut Slice2d::new(&[[1]]));
+    }
+
+    #[test]
     fn slice2d_index_and_slice() {
         let a = Slice2d::new(
             &[
