@@ -1,2 +1,2 @@
 # CLRS (Rust)
-Rust implementation of Introduction To Algorithms (4th Edition)
+Rust implementation of Introduction to Algorithms (4th Edition)
