@@ -1,6 +1,10 @@
-pub mod matrix_multiply;
-pub mod matrix_multiply_recursive;
-pub mod matrix_multiply_strassen;
+mod matrix_multiply;
+mod matrix_multiply_recursive;
+mod matrix_multiply_strassen;
+
+pub use matrix_multiply::*;
+pub use matrix_multiply_recursive::*;
+pub use matrix_multiply_strassen::*;
 
 #[cfg(test)]
 mod tests {

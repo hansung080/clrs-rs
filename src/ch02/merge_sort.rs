@@ -46,13 +46,14 @@ fn merge<T: PartialOrd + Copy>(a: &mut [T], p: usize, q: usize, r: usize) {
 
 #[cfg(test)]
 mod tests {
+    use crate::ch02;
     use super::*;
 
     #[test]
     fn merge_sort_test() {
-        crate::ch02::tests::sort_i32(merge_sort);
-        crate::ch02::tests::sort_f64(merge_sort);
-        crate::ch02::tests::sort_char(merge_sort);
-        crate::ch02::tests::sort_str(|a| merge_sort(a));
+        ch02::tests::sort_i32(merge_sort);
+        ch02::tests::sort_f64(merge_sort);
+        ch02::tests::sort_char(merge_sort);
+        ch02::tests::sort_str(|a| merge_sort(a));
     }
 }

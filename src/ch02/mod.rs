@@ -1,6 +1,10 @@
-pub mod insertion_sort;
-pub mod merge_sort;
-pub mod bubble_sort;
+mod insertion_sort;
+mod merge_sort;
+mod bubble_sort;
+
+pub use insertion_sort::*;
+pub use merge_sort::*;
+pub use bubble_sort::*;
 
 #[cfg(test)]
 mod tests {
