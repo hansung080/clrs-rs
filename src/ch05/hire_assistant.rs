@@ -1,9 +1,9 @@
 pub fn hire_assistant(ranks: &[u32]) -> Vec<usize> {
     let mut hired = Vec::new();
     let mut best_rank = 0;
-    for (i, &rank) in ranks.iter().enumerate() {
-        if rank > best_rank {
-            best_rank = rank;
+    for i in 0..ranks.len() {
+        if ranks[i] > best_rank {
+            best_rank = ranks[i];
             hired.push(i);
         }
     }
