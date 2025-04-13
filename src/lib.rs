@@ -15,4 +15,5 @@ pub mod prelude {
     pub use crate::ch05::hire_assistant;
     pub use crate::ch05::randomly_permute;
     pub use crate::ch05::randomized_hire_assistant;
+    pub use crate::ch05::random_sample;
 }
