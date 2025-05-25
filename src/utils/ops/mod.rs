@@ -1,7 +1,7 @@
 mod len;
 mod slice;
-mod into_range;
+mod range;
 
 pub use len::*;
 pub use slice::*;
-pub use into_range::*;
+pub use range::*;

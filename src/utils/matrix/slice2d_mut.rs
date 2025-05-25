@@ -138,8 +138,8 @@ where
     type Output = Slice2dMut<'b, T>;
 
     fn slice_mut(&'b mut self, (row, col): (Rng1, Rng2)) -> Self::Output {
-        let row = row.into_range(Range { start: 0, end: self.row.len() });
-        let col = col.into_range(Range { start: 0, end: self.col.len() });
+        let row = row.into_range(0..self.row.len());
+        let col = col.into_range(0..self.col.len());
         assert!(row.start <= row.end, "row range index starts at {} but ends at {}", row.start, row.end);
         assert!(col.start <= col.end, "column range index starts at {} but ends at {}", col.start, col.end);
         assert!(row.end <= self.row.len(), "row range end index {} out of range for row of length {}", row.end, self.row.len());
