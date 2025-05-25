@@ -1,15 +1,10 @@
 use std::ops::{Bound, Range, RangeBounds};
 
 pub trait RangeIdx: Clone {
-    fn prev(&self) -> Self;
     fn next(&self) -> Self;
 }
 
 impl RangeIdx for usize {
-    fn prev(&self) -> Self {
-        self - 1
-    }
-
     fn next(&self) -> Self {
         self + 1
     }
@@ -19,7 +14,7 @@ pub trait IntoRange<Idx: RangeIdx>: RangeBounds<Idx> + Sized {
     fn into_range(self, unbounded: Range<Idx>) -> Range<Idx> {
         let start = match self.start_bound() {
             Bound::Included(start) => start.clone(),
-            Bound::Excluded(start) => start.prev(),
+            Bound::Excluded(start) => start.next(),
             Bound::Unbounded => unbounded.start,
         };
 
