@@ -14,7 +14,7 @@ pub trait IntoRange<Idx> {
     fn into_range(self, unbounded: Range<Idx>) -> Range<Idx>;
 }
 
-// blanket implementation
+// Blanket implementation of `IntoRange`
 impl<Idx: RangeIndex, T: RangeBounds<Idx>> IntoRange<Idx> for T {
     fn into_range(self, unbounded: Range<Idx>) -> Range<Idx> {
         let start = match self.start_bound() {

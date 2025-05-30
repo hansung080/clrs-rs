@@ -12,7 +12,7 @@ pub trait Shape {
     fn shape(&self) -> (usize, usize);
 }
 
-// blanket implementation
+// Blanket implementation of `Shape`
 impl<T: Shape> Shape for &T {
     fn shape(&self) -> (usize, usize) {
         T::shape(self)

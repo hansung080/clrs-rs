@@ -2,14 +2,14 @@ pub trait Len {
     fn len(&self) -> usize;
 }
 
-// blanket implementation
+// Blanket implementation of `Len`
 impl<T: Len> Len for &T {
     fn len(&self) -> usize {
         T::len(self)
     }
 }
 
-// blanket implementation
+// Blanket implementation of `Len`
 impl<T: Len> Len for &mut T {
     fn len(&self) -> usize {
         T::len(self)
