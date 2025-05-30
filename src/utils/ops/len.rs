@@ -2,8 +2,15 @@ pub trait Len {
     fn len(&self) -> usize;
 }
 
-// Blanket Implementation
+// blanket implementation
 impl<T: Len> Len for &T {
+    fn len(&self) -> usize {
+        T::len(self)
+    }
+}
+
+// blanket implementation
+impl<T: Len> Len for &mut T {
     fn len(&self) -> usize {
         T::len(self)
     }
@@ -27,6 +34,12 @@ impl<T> Len for &[T] {
     }
 }
 
+impl<T> Len for &mut [T] {
+    fn len(&self) -> usize {
+        <[T]>::len(self)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -41,19 +54,28 @@ mod tests {
 
     #[test]
     fn len() {
-        let a = [1];
-        let b = [1, 2];
+        let mut a = [1];
+        let mut b = [1, 2];
         assert_eq!(longer(&a, &b), 2);
+        assert_eq!(longer(&mut a, &mut b), 2);
         assert_eq!(longer(a, b), 2);
 
-        let a = vec![1];
-        let b = vec![1, 2];
+        let mut a = vec![1];
+        let mut b = vec![1, 2];
         assert_eq!(longer(&a, &b), 2);
+        assert_eq!(longer(&mut a, &mut b), 2);
         assert_eq!(longer(a, b), 2);
 
-        let a = &[1][..];
-        let b = &[1, 2][..];
+        let mut a = &[1][..];
+        let mut b = &[1, 2][..];
         assert_eq!(longer(&a, &b), 2);
+        assert_eq!(longer(&mut a, &mut b), 2);
+        assert_eq!(longer(a, b), 2);
+
+        let mut a = &mut [1][..];
+        let mut b = &mut [1, 2][..];
+        assert_eq!(longer(&a, &b), 2);
+        assert_eq!(longer(&mut a, &mut b), 2);
         assert_eq!(longer(a, b), 2);
     }
 }
